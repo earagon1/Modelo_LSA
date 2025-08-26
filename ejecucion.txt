@@ -7,16 +7,18 @@ SCRIPTS PRINCIPALES
     evaluate_model.py → donde se realiza la prueba de la red neuronal.
     main.py → donde se utiliza una GUI para usar el traductor.
 --------------------------------------------------------------------------------------------------------
-🔄 Cada vez que quieras mejorar tu modelo:
+Cada vez que quieras mejorar tu modelo:
 
-    Capturás nuevas muestras con capture_samples.py.
+    Capturás nuevas muestras con capture_samples.py --> captura las señas en frames
 
-    Ejecutás normalize_samples.py.
+    Ejecutás normalize_samples.py --> recorta la cantidad de frames a 15 en todas las señas capturadas
 
-    Ejecutás create_keypoints.py.
+    Ejecutás create_keypoints.py --> genera los keypoints de cada frames para el entrenamiento
 
-    Ejecutás training_model.py.
+    Ejecutás training_model.py --> genera el modelo keras
 
-    Ejecutás convert_to_tflite.py.
+    Ejecutás export_tflite.py --> convierte el modelo keras a tflite
+
+    Ejecutás evaluate_model_tflite.py --> prueba el modelo tflite
 
 Todo ese ciclo queda en Python. El teléfono solo necesita el nuevo .tflite.

@@ -86,7 +86,7 @@ def main():
     conv = tf.lite.TFLiteConverter.from_keras_model(model)
     _enable_select_tf_ops(conv)
     tflite_f32 = conv.convert()
-    out_f32 = os.path.join(MODEL_FOLDER_PATH, f"actions_{MODEL_FRAMES}_f32.tflite")
+    out_f32 = os.path.join(MODEL_FOLDER_PATH, f"actions_{MODEL_FRAMES}.tflite")
     with open(out_f32, "wb") as f:
         f.write(tflite_f32)
     print("Escribí:", out_f32)
