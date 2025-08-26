@@ -1,0 +1,15 @@
+__pycache__/
+.ipynb_checkpoints
+bkps/
+data/
+frame_actions/
+jetson-nano/
+models/
+out/
+frame_actions.rar
+*.rar
+*.h5
+*tflite
+mainwindow_2.ui
+mainwindow.ui
+model.tflite
