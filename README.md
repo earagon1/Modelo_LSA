@@ -83,3 +83,6 @@ Estas optimizaciones permiten inferencia **en tiempo real**, incluso en disposit
 - MediaPipe
 - NumPy, OpenCV
 - TensorFlow Lite para exportación
+
+## **Resultados del entrenamiento**
+https://youtu.be/lMqT3cidfIA
