@@ -13,3 +13,7 @@ frame_actions.rar
 mainwindow_2.ui
 mainwindow.ui
 model.tflite
+
+# Volcados de consola de los experimentos: el resultado
+# util queda en los .json y .md de resultados_*/
+*.log
