@@ -1,0 +1,88 @@
+{
+  "config": {
+    "folds": "5",
+    "epochs": "500",
+    "batch_size": "8",
+    "patience": "10",
+    "monitor": "accuracy",
+    "seed": "42",
+    "salida": "modelo_LSA\\resultados_validacion",
+    "n_muestras": 920,
+    "etiquetas": [
+      "hola",
+      "adios",
+      "bien",
+      "como_estas",
+      "gracias",
+      "e",
+      "v",
+      "l",
+      "i",
+      "n",
+      "minombrees",
+      "porfavor"
+    ],
+    "eps": 3.2302480578422545
+  },
+  "por_fold": [
+    {
+      "accuracy": 0.9619565217391305,
+      "f1_macro": 0.9604768658848357,
+      "f1_micro": 0.9619565217391305,
+      "epocas": 75,
+      "segundos": 104.70650172233582,
+      "n_test": 184
+    },
+    {
+      "accuracy": 0.9510869565217391,
+      "f1_macro": 0.9514952647997399,
+      "f1_micro": 0.9510869565217391,
+      "epocas": 58,
+      "segundos": 80.89856767654419,
+      "n_test": 184
+    },
+    {
+      "accuracy": 0.9565217391304348,
+      "f1_macro": 0.9582143438998276,
+      "f1_micro": 0.9565217391304348,
+      "epocas": 47,
+      "segundos": 67.76841926574707,
+      "n_test": 184
+    },
+    {
+      "accuracy": 0.9347826086956522,
+      "f1_macro": 0.9335314695846005,
+      "f1_micro": 0.9347826086956522,
+      "epocas": 65,
+      "segundos": 84.13075137138367,
+      "n_test": 184
+    },
+    {
+      "accuracy": 0.9402173913043478,
+      "f1_macro": 0.9423568531214689,
+      "f1_micro": 0.9402173913043478,
+      "epocas": 47,
+      "segundos": 88.72715926170349,
+      "n_test": 184
+    }
+  ],
+  "out_of_fold": {
+    "accuracy": 0.9489130434782609,
+    "f1_macro": 0.9498432350304373,
+    "f1_micro": 0.9489130434782609,
+    "sigma": 0.1053269165378032,
+    "n_con_vecindad": 792,
+    "vecindad_media": 54.37626262626262,
+    "eps": 3.2302480578422545
+  },
+  "media": {
+    "accuracy": 0.9489130434782609,
+    "f1_macro": 0.9492149594580945,
+    "f1_micro": 0.9489130434782609
+  },
+  "desvio": {
+    "accuracy": 0.010080020103799691,
+    "f1_macro": 0.010060066861431608,
+    "f1_micro": 0.010080020103799691
+  }
+}
