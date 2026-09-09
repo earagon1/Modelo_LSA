@@ -15,7 +15,7 @@ except Exception:  # fallback si fuera necesario
 
 from constants import (
     MODEL_PATH, MODEL_FOLDER_PATH, MODEL_FRAMES, LENGTH_KEYPOINTS,
-    WORDS_JSON_PATH,
+    WORDS_JSON_PATH, KEYPOINTS_PATH,
 )
 from helpers import get_sequences_and_labels, get_word_ids
 
@@ -51,7 +51,12 @@ def _normalize_to_fixed(seq, target_len=15):
 
 # --- Representative dataset para cuantización INT8 pura ---
 def representative_dataset_gen(max_samples=300):
-    words = get_word_ids(WORDS_JSON_PATH)
+    # Solo las clases que realmente tienen .h5: words.json puede listar
+    # etiquetas todavia sin grabar, y pedirlas revienta la lectura.
+    words = [
+        w for w in get_word_ids(WORDS_JSON_PATH)
+        if os.path.exists(os.path.join(KEYPOINTS_PATH, f"{w}.h5"))
+    ]
     sequences, _ = get_sequences_and_labels(words)  # lista de secuencias (cada una: [frames de 126])
     count = 0
     for seq in sequences:
@@ -102,29 +107,42 @@ def main():
         f.write(tflite_opt)
     print("Escribí:", out_opt)
 
-    # 2C) (Opcional) INT8 puro (E/S int8). Requiere representative dataset.
-    make_int8 = False
-    if make_int8:
-        print("Convirtiendo a TFLite (INT8 puro + Select TF Ops)...")
+    # 2C) Cuantizacion entera con dataset de calibracion.
+    #
+    # Es la "cuantizacion entera" que la propuesta compromete junto a la
+    # dinamica. Estuvo escrita pero desactivada, asi que nunca se midio.
+    #
+    # Se dejan entrada y salida en float32 a proposito. Forzar
+    # inference_input_type=int8 obligaria a cambiar TFLiteClassifier.kt, que
+    # hoy escribe floats en el buffer de entrada; con E/S float32 el modelo
+    # entra en la app sin tocar una linea de Kotlin y los pesos y activaciones
+    # internas igual quedan cuantizados, que es lo que importa para tamano y
+    # velocidad.
+    print("Convirtiendo a TFLite (INT8 con calibracion + Select TF Ops)...")
+    out_int8 = os.path.join(MODEL_FOLDER_PATH, f"actions_{MODEL_FRAMES}_int8.tflite")
+    try:
         conv_int8 = tf.lite.TFLiteConverter.from_keras_model(model)
         conv_int8.optimizations = [tf.lite.Optimize.DEFAULT]
         conv_int8.representative_dataset = representative_dataset_gen
-        # Forzar INT8 para kernels TFLite; incluimos Select TF Ops por compatibilidad grafo
+        # TFLITE_BUILTINS_INT8 solo no alcanza: las LSTM necesitan Select TF Ops.
         conv_int8.target_spec.supported_ops = [
             tf.lite.OpsSet.TFLITE_BUILTINS_INT8,
+            tf.lite.OpsSet.TFLITE_BUILTINS,
             tf.lite.OpsSet.SELECT_TF_OPS,
         ]
-        conv_int8.inference_input_type = tf.int8
-        conv_int8.inference_output_type = tf.int8
         conv_int8._experimental_lower_tensor_list_ops = False
 
         tflite_int8 = conv_int8.convert()
-        out_int8 = os.path.join(MODEL_FOLDER_PATH, f"actions_{MODEL_FRAMES}_int8.tflite")
         with open(out_int8, "wb") as f:
             f.write(tflite_int8)
-        print("Escribí:", out_int8)
+        print("Escribi:", out_int8)
+    except Exception as e:
+        # La cuantizacion entera de LSTM con Select TF Ops no siempre converge.
+        # Si falla, que quede escrito por que y no como un misterio.
+        print(f"[FALLO] No se pudo generar el INT8: {type(e).__name__}: {e}")
+        print("        Los modelos float32 y dinamico si quedaron escritos.")
 
-    print("Listo ✅")
+    print("Listo")
 
 
 if __name__ == "__main__":
