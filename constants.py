@@ -21,16 +21,22 @@ FONT = cv2.FONT_HERSHEY_PLAIN
 FONT_SIZE = 1.5
 FONT_POS = (5, 30)
 
+# Las claves son los word_id: deben coincidir con models/words.json y con los
+# .h5 de data/keypoints. Los valores son solo el texto que se muestra y se
+# pronuncia, asi que se pueden editar sin reentrenar.
 words_text = {
-    "hola": "HOLA",
-    "adios": "ADIOS",
-    "como_estas": "COMO ESTAS",
-    "bien": "BIEN",
-    "chau": "CHAU",
-    "gracias": "GRACIAS",
+    "hola": "Hola",
+    "adios": "Adiós",
+    "como_estas": "¿Cómo estás?",
+    "bien": "Bien",
+    "chau": "Chau",
+    "gracias": "Gracias",
     "e":"E",
     "v":"V",
     "l":"L",
     "i":"I",
-    "n":"N"
+    "n":"N",
+    "muchasgracias": "Muchas gracias",
+    "minombrees": "Mi nombre es",
+    "porfavor": "Por favor"
 }

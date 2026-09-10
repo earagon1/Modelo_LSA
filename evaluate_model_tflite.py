@@ -230,7 +230,7 @@ def evaluate_model(src=None, threshold=0.5, margin_frame=1, delay_frames=3,
                 
                 # Mostrar tipo de modelo en la ventana
                 model_label = f"[{model_type}] " + ' | '.join(sentence)
-                cv2.putText(frame, model_label, FONT_POS, FONT, FONT_SIZE, (255, 255, 255))
+                cv2.putText(frame, solo_ascii(model_label), FONT_POS, FONT, FONT_SIZE, (255, 255, 255))
                 
                 draw_keypoints(frame, results)
                 cv2.imshow('Traductor LSA', frame)

@@ -1,5 +1,6 @@
 import json
 import os
+import unicodedata
 import cv2
 from mediapipe.python.solutions.holistic import FACEMESH_CONTOURS, POSE_CONNECTIONS, HAND_CONNECTIONS
 from mediapipe.python.solutions.drawing_utils import draw_landmarks, DrawingSpec
@@ -22,6 +23,19 @@ def create_folder(path):
     '''
     if not os.path.exists(path):
         os.makedirs(path)
+
+def solo_ascii(texto: str) -> str:
+    '''
+    ### TEXTO SIN TILDES NI SIGNOS DE APERTURA
+    cv2.putText usa las fuentes Hershey, que solo dibujan ASCII: los acentos y
+    los signos invertidos salen como caracteres basura. Se aplica unicamente a
+    lo que se pinta sobre el frame; en Qt y en gTTS va el texto original.
+    '''
+    sin_tildes = ''.join(
+        c for c in unicodedata.normalize('NFKD', texto)
+        if not unicodedata.combining(c)
+    )
+    return sin_tildes.encode('ascii', 'ignore').decode('ascii')
 
 def there_hand(results: NamedTuple) -> bool:
     return results.left_hand_landmarks or results.right_hand_landmarks
