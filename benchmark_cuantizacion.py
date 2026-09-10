@@ -172,7 +172,11 @@ def main():
         "al entrenar). Lo comparable es la diferencia entre variantes."
     )
 
-    destino = modelos_dir / "benchmark_cuantizacion.md"
+    # La tabla NO va en models/: ese directorio esta en .gitignore por los
+    # binarios, y el resultado quedaria fuera del repo sin que se note.
+    salida = AQUI / "resultados_cuantizacion"
+    salida.mkdir(exist_ok=True)
+    destino = salida / "benchmark_cuantizacion.md"
     destino.write_text(tabla + "\n", encoding="utf-8")
     print(f"\nTabla guardada en {destino}")
 
