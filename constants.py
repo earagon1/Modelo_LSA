@@ -36,6 +36,6 @@ words_text = {
     "l":"L",
     "i":"I",
     "n":"N",
-    "minombrees": "Mi nombre es",
-    "porfavor": "Por favor"
+    "mi_nombre_es": "Mi nombre es",
+    "por_favor": "Por favor"
 }

@@ -1,24 +1,94 @@
-SCRIPTS PRINCIPALES
+SCRIPTS DEL PIPELINE
 
-    capture_samples.py → captura las muestras y las ubica en la carpeta frame_actions.
-    normalize_samples.py → normaliza las muestras para que todas tengan la misma cantidad de frames (importante).
-    create_keypoints.py → crea los keypoints que se usarán en el entrenamiento.
-    training_model.py → entrena la red neuronal.
-    evaluate_model.py → donde se realiza la prueba de la red neuronal.
-    main.py → donde se utiliza una GUI para usar el traductor.
---------------------------------------------------------------------------------------------------------
-Cada vez que quieras mejorar tu modelo:
+    capture_samples.py         captura las muestras y las deja en frame_actions/
+    normalize_samples.py       deja todas las muestras en 15 frames (ver AVISO)
+    create_keypoints.py        genera los keypoints .h5 para el entrenamiento
+    training_model.py          entrena la red y guarda models/actions_15.keras
+    export_tflite.py           convierte el .keras a .tflite
+    evaluate_model_tflite.py   prueba el .tflite con la webcam
 
-    Capturás nuevas muestras con capture_samples.py --> captura las señas en frames
+HERRAMIENTAS
 
-    Ejecutás normalize_samples.py --> recorta la cantidad de frames a 15 en todas las señas capturadas
+    verify_dataset_mix.py      muestra cuantas muestras aporta cada fuente por clase
+    validacion_cruzada.py      K-fold estratificado + matriz de confusion out-of-fold
+    benchmark_cuantizacion.py  compara float32, cuantizacion dinamica y entera
+    finetune_from_lsa_json.py  ajuste fino sobre muestras nuevas del telefono
+    federated/                 experimento de aprendizaje federado (ver su README)
 
-    Ejecutás create_keypoints.py --> genera los keypoints de cada frames para el entrenamiento
+--------------------------------------------------------------------------------
 
-    Ejecutás training_model.py --> genera el modelo keras
+CICLO COMPLETO, cada vez que quieras mejorar el modelo
 
-    Ejecutás export_tflite.py --> convierte el modelo keras a tflite
+    1. capture_samples.py        grabas la sena nueva en frames
+    2. normalize_samples.py      recorta cada muestra a 15 frames
+    3. create_keypoints.py       genera los .h5
+    4. training_model.py         genera el modelo .keras
+    5. export_tflite.py          convierte a .tflite
+    6. evaluate_model_tflite.py  lo probas con la webcam
 
-    Ejecutás evaluate_model_tflite.py --> prueba el modelo tflite
+Todo el ciclo queda en Python. El telefono solo necesita el .tflite nuevo, mas
+words.json si cambiaron las clases. Los dos van a:
 
-Todo ese ciclo queda en Python. El teléfono solo necesita el nuevo .tflite.
+    TraductorLSA/app/src/main/assets/
+        actions_15_f32.tflite   <- models/actions_15.tflite
+        actions_15_opt.tflite   <- models/actions_15_opt.tflite
+        words.json              <- models/words.json
+
+--------------------------------------------------------------------------------
+
+AVISO: normalize_samples.py no se puede correr dos veces
+
+Ordena los frames con int(nombre.split('.')[0]), o sea que espera los nombres
+numericos que deja capture_samples.py: 1.jpg, 2.jpg, 3.jpg...
+
+Despues de recortarlos los RENOMBRA a frame_01.jpg, frame_02.jpg. Si se lo
+vuelve a correr sobre esa misma carpeta, int("frame_01") tira ValueError.
+
+Se corre una vez por tanda de captura, justo despues de capturar. Si los
+frames ya se llaman frame_NN.jpg, ese paso ya esta hecho: arrancar desde
+create_keypoints.py.
+
+--------------------------------------------------------------------------------
+
+NOMBRES DE LAS CLASES
+
+create_keypoints.py nombra cada .h5 segun su carpeta en frame_actions/, y
+words.json tiene que usar exactamente ese nombre. Por eso las carpetas van sin
+espacios ni tildes y con guion bajo: como_estas, por_favor, mi_nombre_es.
+
+Para renombrar una clase se renombra LA CARPETA, no el .h5: si se toca solo el
+.h5, la proxima corrida de create_keypoints.py vuelve a generar el nombre viejo.
+
+El texto que se ve en la app no sale de aca. Vive en NOMBRES_PARA_MOSTRAR, en
+TraductorLSA/.../ui/screens/DictionaryScreen.kt, que traduce por_favor a
+"Por favor" y como_estas a "¿Cómo estás?". Al agregar una clase nueva hay que
+sumarla a ese mapa, o la app muestra el id crudo.
+
+--------------------------------------------------------------------------------
+
+SOBRE lsa_samples.json
+
+Es el export del modo entrenamiento de la app. training_model.py lo fusiona con
+los .h5 si esta presente, y agrega a words.json cualquier etiqueta nueva que
+encuentre adentro.
+
+Ojo con eso: el vocabulario puede crecer solo a partir de lo grabado en el
+telefono. Para sacar una clase del modelo hay que sacarla de words.json Y de ese
+JSON, o vuelve a aparecer en el proximo entrenamiento.
+
+verify_dataset_mix.py muestra que aporta cada fuente antes de entrenar.
+federated/verificar_export.py revisa un export recien traido del telefono.
+
+--------------------------------------------------------------------------------
+
+ARCHIVOS RETIRADOS
+
+main.py y sus mainwindow*.ui eran una GUI de PyQt5, anterior a la app Android, y
+habia quedado rota: importaba evaluate_model.py, que ya no existe.
+
+confusion_matrix.py referenciaba MODEL_NUMS y MODELS_PATH, que ya no estan en
+constants.py. Lo reemplaza validacion_cruzada.py, que ademas da la matriz
+out-of-fold, que es la honesta.
+
+Los dos, junto con los backups, out/ y jetson-nano/, estan en
+Desktop/Tesis/archivo-modelo_LSA/
