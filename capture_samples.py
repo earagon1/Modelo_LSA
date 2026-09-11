@@ -230,6 +230,6 @@ def capture_samples(path, margin_frame=7, min_cant_frames=5, delay_frames=10):
 
 
 if __name__ == "__main__":
-    word_name = "n"
+    word_name = "porfavor"
     word_path = os.path.join(ROOT_PATH, FRAME_ACTIONS_PATH, word_name)
     capture_samples(word_path)
