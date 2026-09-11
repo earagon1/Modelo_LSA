@@ -9,7 +9,7 @@ import pandas as pd
 from typing import NamedTuple
 from constants import *
 
-# GENERAL
+
 def mediapipe_detection(image, model):
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     image.flags.writeable = False
@@ -121,3 +121,41 @@ def get_sequences_and_labels(words_id):
             labels.append(word_index)
                     
     return sequences, labels
+
+
+# === JSON loader para sumar secuencias desde lsa_samples.json ===
+import json as _json
+import numpy as _np
+
+def load_lsa_json(json_path: str):
+    """
+    Lee lsa_samples.json con esquema:
+      { "t": T, "d": D, "by_date": { "YYYY-MM-DD": [ {"label": str, "seq": [[D]*T]} ] } }
+    Devuelve:
+      sequences_json: List[List[np.ndarray(shape=(D,), dtype=float32)]]
+      labels_json_txt: List[str]
+    """
+    with open(json_path, "r", encoding="utf-8") as f:
+        data = _json.load(f)
+
+    T = int(data.get("t", 15))
+    D = int(data.get("d", 126))
+
+    sequences_json = []
+    labels_json_txt = []
+
+    for _, arr in (data.get("by_date") or {}).items():
+        for item in arr:
+            lab = item["label"]
+            seq = item["seq"]
+            frames = [_np.asarray(fr, dtype=_np.float32).reshape(D) for fr in seq]
+            if len(frames) > T:
+                frames = frames[:T]
+            elif len(frames) < T:
+                pad = [_np.zeros(D, dtype=_np.float32) for _ in range(T - len(frames))]
+                frames = pad + frames
+
+            sequences_json.append(frames)
+            labels_json_txt.append(lab)
+
+    return sequences_json, labels_json_txt
