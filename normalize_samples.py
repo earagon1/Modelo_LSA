@@ -48,13 +48,40 @@ def normalize_frames(frames, target_frame_count=15):
             clear_directory(sample_directory)
             save_normalized_frames(sample_directory, normalized_frames)'''
 
+def numero_de_frame(nombre):
+    """
+    Numero de orden de un frame, venga como lo deja capture_samples.py
+    ("7.jpg") o ya renombrado por este script ("frame_07.jpg").
+
+    Antes esto era int(nombre.split('.')[0]), que solo entendia el primer
+    formato: al correr el script una segunda vez sobre la misma carpeta
+    reventaba con ValueError en "frame_01".
+    """
+    base = nombre.rsplit(".", 1)[0]
+    digitos = "".join(c for c in base if c.isdigit())
+    return int(digitos) if digitos else 0
+
+
+def ya_normalizada(jpgs, target_frame_count):
+    """La muestra ya tiene la cantidad exacta de frames y el nombre final."""
+    return len(jpgs) == target_frame_count and all(f.startswith("frame_") for f in jpgs)
+
+
 def process_directory(word_directory, target_frame_count=15):
     for sample_name in os.listdir(word_directory):
         sample_directory = os.path.join(word_directory, sample_name)
         if os.path.isdir(sample_directory):
+            # Las muestras ya procesadas se saltean. Sin esto, volver a correr
+            # el script sobre una carpeta que mezcla muestras viejas y nuevas
+            # se cortaba en la primera vieja y no llegaba a normalizar ninguna
+            # de las nuevas.
+            jpgs_actuales = [f for f in os.listdir(sample_directory) if f.endswith('.jpg')]
+            if ya_normalizada(jpgs_actuales, target_frame_count):
+                continue
+
             # Listar y ordenar los archivos correctamente por número
             frames = sorted([f for f in os.listdir(sample_directory) if f.endswith('.jpg')],
-                            key=lambda x: int(x.split('.')[0]))  # Ordenar por el número de archivo
+                            key=numero_de_frame)  # Entiende 7.jpg y frame_07.jpg
             
             print(f"\nProcesando directorio: {sample_directory}")
             print(f"Frames encontrados: {len(frames)}")
@@ -86,7 +113,7 @@ def process_directory(word_directory, target_frame_count=15):
             
             # Renombrar los frames restantes
             remaining_frames = sorted([f for f in os.listdir(sample_directory) if f.endswith('.jpg')],
-                                      key=lambda x: int(x.split('.')[0]))  # Ordenar nuevamente por número
+                                      key=numero_de_frame)  # Entiende 7.jpg y frame_07.jpg
             print(f"Frames después de la acción (antes de renombrar): {remaining_frames}")
             
             for i, frame in enumerate(remaining_frames, start=1):
