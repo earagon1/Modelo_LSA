@@ -98,8 +98,11 @@ def predecir(ruta_modelo: Path, X: np.ndarray, num_threads: int = 4):
 def main():
     modelos_dir = AQUI / "models"
 
-    # Indices de words.json completo: el .keras se entreno con 13 salidas y
-    # renumerar las clases presentes correria las etiquetas posteriores al hueco.
+    # Indices de words.json completo. Hoy todas las clases tienen .h5, asi que
+    # el flag no cambia nada; queda puesto porque si alguna vez words.json
+    # lista una clase sin datos, renumerar las presentes correria las
+    # etiquetas posteriores al hueco y la accuracy saldria mal medida sin que
+    # nada falle a la vista.
     X, y, etiquetas = cargar_dataset(conservar_indices_de_words_json=True, verbose=False)
     _, X_test, _, y_test = split_train_test(X, y, test_size=0.2, seed=42)
     print(f"Test: {len(X_test)} muestras, {len(etiquetas)} clases\n")
