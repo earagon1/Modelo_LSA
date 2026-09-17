@@ -53,16 +53,30 @@ create_keypoints.py.
 NOMBRES DE LAS CLASES
 
 create_keypoints.py nombra cada .h5 segun su carpeta en frame_actions/, y
-words.json tiene que usar exactamente ese nombre. Por eso las carpetas van sin
-espacios ni tildes y con guion bajo: como_estas, por_favor, mi_nombre_es.
+words.json tiene que usar exactamente ese nombre. La convencion es en
+minusculas, sin tildes, y CON ESPACIO donde la frase lo lleva:
 
-Para renombrar una clase se renombra LA CARPETA, no el .h5: si se toca solo el
-.h5, la proxima corrida de create_keypoints.py vuelve a generar el nombre viejo.
+    como estas        mi nombre es        por favor
 
-El texto que se ve en la app no sale de aca. Vive en NOMBRES_PARA_MOSTRAR, en
-TraductorLSA/.../ui/screens/DictionaryScreen.kt, que traduce por_favor a
-"Por favor" y como_estas a "¿Cómo estás?". Al agregar una clase nueva hay que
-sumarla a ese mapa, o la app muestra el id crudo.
+Los tres lugares tienen que coincidir exactamente: la carpeta en
+frame_actions/, el .h5 en data/keypoints/ y la entrada en words.json. Si uno
+queda distinto, training_model.py no encuentra ese .h5 y IGNORA la clase EN
+SILENCIO: el modelo sale con menos salidas y el unico aviso es una linea
+"[INFO] Ignorando H5 inexistentes" perdida entre el resto de la salida.
+
+Para renombrar una clase se renombra LA CARPETA, no el .h5: si se toca solo
+el .h5, la proxima corrida de create_keypoints.py vuelve a generar el nombre
+viejo. Y hay que acordarse de los dos words.json: el de models/ y el de los
+assets de la app.
+
+El texto que se ve en pantalla no sale de aca. Vive en NOMBRES_PARA_MOSTRAR,
+en TraductorLSA/.../ui/screens/DictionaryScreen.kt, que traduce "como estas"
+a "¿Cómo estás?", o sea que agrega tildes y signos. Al sumar una clase nueva
+hay que agregarla a ese mapa, o la app muestra el id crudo.
+
+Los dibujos del diccionario SI van con guion bajo: la app arma el nombre de
+archivo reemplazando los espacios, asi que "por favor" busca
+dictionary/por_favor.jpg.
 
 --------------------------------------------------------------------------------
 

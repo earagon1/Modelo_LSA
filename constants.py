@@ -27,7 +27,7 @@ FONT_POS = (5, 30)
 words_text = {
     "hola": "Hola",
     "adios": "Adiós",
-    "como_estas": "¿Cómo estás?",
+    "como estas": "¿Cómo estás?",
     "bien": "Bien",
     "chau": "Chau",
     "gracias": "Gracias",
@@ -36,6 +36,6 @@ words_text = {
     "l":"L",
     "i":"I",
     "n":"N",
-    "mi_nombre_es": "Mi nombre es",
-    "por_favor": "Por favor"
+    "mi nombre es": "Mi nombre es",
+    "por favor": "Por favor"
 }
