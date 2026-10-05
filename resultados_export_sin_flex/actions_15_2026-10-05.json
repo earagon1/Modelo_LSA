@@ -1,0 +1,37 @@
+{
+  "tf": "2.10.1",
+  "modelo": "models/actions_15.keras",
+  "n": 1200,
+  "resultados": [
+    {
+      "variante": "f32",
+      "ok": true,
+      "kb": 701.7,
+      "flex": [],
+      "n_ops": 422,
+      "max_abs_vs_keras": 4.172325134277344e-07,
+      "top1_igual_keras": 1.0,
+      "accuracy_datos_vistos": 0.975
+    },
+    {
+      "variante": "dinamica",
+      "ok": true,
+      "kb": 235.7,
+      "flex": [],
+      "n_ops": 422,
+      "max_abs_vs_keras": 0.036538660526275635,
+      "top1_igual_keras": 1.0,
+      "accuracy_datos_vistos": 0.975
+    },
+    {
+      "variante": "int8",
+      "ok": true,
+      "kb": 276.3,
+      "flex": [],
+      "n_ops": 424,
+      "max_abs_vs_keras": 0.2211528718471527,
+      "top1_igual_keras": 0.9966666666666667,
+      "accuracy_datos_vistos": 0.975
+    }
+  ]
+}
