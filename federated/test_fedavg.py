@@ -238,7 +238,7 @@ def _json_de_la_app(ruta: Path, t=15, d=126):
 def test_carga_json_con_client_id():
     import tempfile
 
-    from data import SIN_CLIENTE, cargar_lsa_json, partition_by_client
+    from data import SIN_CLIENTE, cargar_lsa_json, partition_by_client, seudonimo_participante
 
     with tempfile.TemporaryDirectory() as tmp:
         ruta = Path(tmp) / "lsa_samples.json"
@@ -264,8 +264,13 @@ def test_carga_json_con_client_id():
         for parte in partes:
             assert len(set(client_ids[parte])) == 1
 
+        # El client_id crudo de los exports viejos se lee como su seudonimo, el
+        # mismo que la app guarda ahora en participant_id: no queda ningun id de
+        # cuenta en lo que se carga.
+        assert not any(str(c).startswith("user_") for c in client_ids)
+
         # user_aaa grabo dos 'hola'; el indice de 'hola' es 0.
-        grupo_aaa = next(p for p in partes if client_ids[p][0] == "user_aaa")
+        grupo_aaa = next(p for p in partes if client_ids[p][0] == seudonimo_participante("user_aaa"))
         assert len(grupo_aaa) == 2 and set(y[grupo_aaa]) == {0}
 
 

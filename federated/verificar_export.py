@@ -9,8 +9,12 @@ Chequea:
 
   - Que el esquema sea el esperado (t, d, by_date) y las secuencias tengan la
     forma correcta.
-  - Que cada muestra traiga `client_id`. Sin ese campo el dataset no se puede
-    particionar por persona y el experimento federado no pasa de sintetico.
+  - Que cada muestra traiga `participant_id` (o el `client_id` crudo de las
+    versiones anteriores, que se convierte al mismo seudonimo que usa la app).
+    Sin ese campo el dataset no se puede particionar por persona y el
+    experimento federado no pasa de sintetico.
+  - Que no queden ids de cuenta crudos: la app los reemplaza antes de exportar,
+    asi que si aparecen, el archivo salio de una version anterior.
   - Cuantas muestras aporto cada persona y de que clases, que es lo que define
     si los clientes van a tener datos suficientes.
 
@@ -29,6 +33,8 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from data import SIN_CLIENTE, id_participante  # noqa: E402
 
 MINIMO_RECOMENDADO = 20  # muestras por persona para que entrenar local tenga sentido
 
@@ -72,6 +78,7 @@ def main():
 
     total = 0
     sin_client = 0
+    ids_crudos = 0
     forma_mala = 0
     por_cliente = Counter()
     clases_por_cliente = defaultdict(Counter)
@@ -86,10 +93,12 @@ def main():
             if not isinstance(seq, list) or len(seq) != t or any(len(f) != d for f in seq):
                 forma_mala += 1
 
-            cid = item.get("client_id")
-            if not cid:
+            if item.get("client_id") and not item.get("participant_id"):
+                ids_crudos += 1
+            cid = id_participante(item)
+            if cid == SIN_CLIENTE:
                 sin_client += 1
-                cid = "(sin client_id)"
+                cid = "(sin participant_id)"
             por_cliente[cid] += 1
             clases_por_cliente[cid][item.get("label", "?")] += 1
 
@@ -107,16 +116,22 @@ def main():
     print("-" * 68)
     if sin_client == total:
         problemas.append(
-            "NINGUNA muestra tiene client_id. El export es de una version de la "
+            "NINGUNA muestra tiene participant_id. El export es de una version de la "
             "app anterior al campo, o se grabo sin sesion iniciada."
         )
     elif sin_client:
-        problemas.append(f"{sin_client} de {total} muestras no tienen client_id")
+        problemas.append(f"{sin_client} de {total} muestras no tienen participant_id")
+    if ids_crudos:
+        problemas.append(
+            f"{ids_crudos} muestras traen el id de cuenta crudo (client_id). Se leen igual, "
+            "pero ese archivo identifica personas: no compartirlo. Exportar de nuevo desde "
+            "la app actual lo reemplaza por el seudonimo."
+        )
 
     for cid, n in por_cliente.most_common():
         clases = clases_por_cliente[cid]
         aviso = ""
-        if cid == "(sin client_id)":
+        if cid == "(sin participant_id)":
             aviso = "  <-- no sirve para particionar"
         elif n < MINIMO_RECOMENDADO:
             aviso = f"  <-- pocas muestras (menos de {MINIMO_RECOMENDADO})"
@@ -124,7 +139,7 @@ def main():
         detalle = ", ".join(f"{k}:{v}" for k, v in sorted(clases.items()))
         print(f"    {detalle}")
 
-    personas = [c for c in por_cliente if c != "(sin client_id)"]
+    personas = [c for c in por_cliente if c != "(sin participant_id)"]
 
     # ------------------------------------------------------------ veredicto
     print("\n" + "=" * 68)
@@ -138,7 +153,7 @@ def main():
         print("NO SIRVE todavia para el experimento federado por persona.")
         print("Revisar que la app este actualizada y que se grabe con sesion iniciada.")
     elif len(personas) == 1:
-        print(f"El campo client_id funciona ({personas[0]}).")
+        print(f"El campo participant_id funciona ({personas[0]}).")
         print("Falta grabar mas personas: con una sola no hay nada que federar.")
     else:
         print(f"LISTO: {len(personas)} personas distintas, {total - sin_client} muestras atribuidas.")

@@ -21,6 +21,7 @@ es lo que FedAvg necesita para existir. Hay tres formas de partir:
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -144,6 +145,30 @@ def cargar_dataset(
 
 SIN_CLIENTE = "sin_cliente"
 
+# Misma derivacion que dataset/Participante.kt de la app. Si cambia en un lado
+# tiene que cambiar en el otro, o un export viejo y uno nuevo de la misma
+# persona quedan como dos personas distintas.
+_DOMINIO_PARTICIPANTE = "senar-participante-v1:"
+_PREFIJO_PARTICIPANTE = "p1_"
+
+
+def seudonimo_participante(id_cuenta: str) -> str:
+    """Seudonimo de una cuenta de Clerk, igual que lo calcula la app."""
+    h = hashlib.sha256((_DOMINIO_PARTICIPANTE + id_cuenta).encode("utf-8")).hexdigest()
+    return _PREFIJO_PARTICIPANTE + h[:16]
+
+
+def id_participante(item: dict) -> str:
+    """De quien es una muestra del export: su `participant_id`, o el seudonimo del
+    `client_id` crudo que guardaban las versiones anteriores de la app, o
+    `SIN_CLIENTE` si no tiene ninguno de los dos."""
+    if item.get("participant_id"):
+        return item["participant_id"]
+    crudo = item.get("client_id")
+    if not crudo:
+        return SIN_CLIENTE
+    return crudo if crudo.startswith(_PREFIJO_PARTICIPANTE) else seudonimo_participante(crudo)
+
 
 def cargar_lsa_json(
     json_path: Path,
@@ -159,15 +184,16 @@ def cargar_lsa_json(
 
         {"t": 15, "d": 126,
          "by_date": {"2026-03-01": [{"label": "hola",
-                                     "client_id": "user_2abc...",
+                                     "participant_id": "p1_34a397c8c04e7f25",
                                      "seq": [[...126...], ...]}]}}
 
-    `client_id` es el id de la cuenta que grabo la muestra. Es el campo que
-    habilita `partition_by_client`, o sea el experimento federado con clientes
-    reales en vez de particiones sinteticas. Las muestras exportadas por
-    versiones anteriores de la app no lo traen y se agrupan bajo `SIN_CLIENTE`;
-    el conteo se avisa por consola porque esas muestras no sirven para el
-    experimento por persona.
+    `participant_id` es el seudonimo de la cuenta que grabo la muestra (ver
+    `id_participante`). Es el campo que habilita `partition_by_client`, o sea el
+    experimento federado con clientes reales en vez de particiones sinteticas.
+    Los exports de antes del seudonimo traen `client_id` crudo y se convierten
+    con la misma derivacion que la app. Las muestras sin ninguno de los dos se
+    agrupan bajo `SIN_CLIENTE`; el conteo se avisa por consola porque esas
+    muestras no sirven para el experimento por persona.
 
     Si se pasa `etiquetas_base` (tipicamente el `word_ids` de words.json), se
     respeta ese orden y las etiquetas nuevas se agregan al final, igual que
@@ -187,7 +213,7 @@ def cargar_lsa_json(
                 continue
             secuencias.append(_normalizar_largo(seq, t))
             etiquetas_txt.append(item["label"])
-            clientes.append(item.get("client_id") or SIN_CLIENTE)
+            clientes.append(id_participante(item))
 
     if not secuencias:
         raise ValueError(f"{json_path} no tiene ninguna muestra utilizable")
@@ -212,8 +238,8 @@ def cargar_lsa_json(
             print(f"[data]   {cid:24s} {n:4d} muestras{marca}")
         if SIN_CLIENTE in set(clientes):
             print(
-                "[data] AVISO: hay muestras sin client_id (exportadas por una version "
-                "de la app anterior al campo). No sirven para particionar por persona."
+                "[data] AVISO: hay muestras sin participant_id (exportadas por una version "
+                "de la app anterior al campo o sin sesion). No sirven para particionar por persona."
             )
 
     return X, y, etiquetas, client_ids
