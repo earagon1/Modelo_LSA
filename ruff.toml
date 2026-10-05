@@ -1,0 +1,10 @@
+# Lint del código nuevo (lsa/, scripts/, tests/). Los scripts viejos de la raíz
+# se ordenan o pasan a legacy/ en PY-D8; hasta entonces quedan fuera.
+target-version = "py310"
+line-length = 120
+include = ["lsa/**/*.py", "scripts/**/*.py", "tests/**/*.py"]
+
+[lint]
+select = ["E", "F", "W", "I", "UP", "B", "RUF"]
+# El texto es en español: tildes, × y ≈ son intencionales.
+ignore = ["RUF001", "RUF002", "RUF003"]

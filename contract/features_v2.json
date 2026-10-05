@@ -1,0 +1,45 @@
+{
+  "features_version": "2",
+  "extractor": {
+    "nombre": "mediapipe.tasks.vision.HandLandmarker",
+    "modelo": "hand_landmarker.task",
+    "sha256": "fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1",
+    "num_hands": 2,
+    "min_hand_detection_confidence": 0.6,
+    "min_hand_presence_confidence": 0.5,
+    "min_tracking_confidence": 0.5
+  },
+  "imagen": {
+    "espejada": false,
+    "rotacion_a_arriba": [0, 90, 180, 270],
+    "orientacion_modo_sena": "vertical"
+  },
+  "lateralidad": {
+    "etiqueta_a_slot": {"Left": "lh", "Right": "rh"},
+    "slot_por_defecto": "rh",
+    "etiqueta_repetida": "mayor_score_conserva_el_slot"
+  },
+  "coordenadas": "lienzo_cuadrado",
+  "vector": {
+    "dim": 126,
+    "orden": ["lh", "rh"],
+    "landmarks_por_mano": 21,
+    "componentes": ["x", "y", "z"],
+    "dtype": "float32"
+  },
+  "frames_sin_mano": "descartar",
+  "secuencia": {
+    "T": 15,
+    "remuestreo": {
+      "n_menor_T": "interpolacion_lineal_linspace",
+      "n_mayor_T": "floor(i*n/T) entero"
+    },
+    "min_frames_validos": 5
+  },
+  "captura": {
+    "modo": "por_tiempo",
+    "duracion_ms": 1500,
+    "duracion_ms_es_provisional": true
+  },
+  "tolerancia_paridad": 1e-6
+}

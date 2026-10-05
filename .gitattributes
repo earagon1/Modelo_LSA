@@ -1,0 +1,3 @@
+# El contrato se compara por sha256 entre los dos repos: sin conversion de
+# finales de linea, o un checkout en Windows cambia los hashes.
+contract/** -text
