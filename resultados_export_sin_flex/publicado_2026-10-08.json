@@ -1,0 +1,20 @@
+{
+  "modelo_keras": "models/actions_15.keras",
+  "n_secuencias": 1200,
+  "kb": 235.7,
+  "sha256": "6dda393ea44e067499d879eefe4507a849d91e82bcb1e2dc5d57b584a4b65fd3",
+  "ops_flex": [],
+  "vs_keras": {
+    "top1_igual": 1.0,
+    "max_abs": 0.036538660526275635,
+    "media_abs": 0.00013034173753112555
+  },
+  "accuracy_datos_vistos": 0.975,
+  "vs_publicado": {
+    "top1_igual": 1.0,
+    "max_abs": 1.8656253814697266e-05,
+    "media_abs": 5.637448285966684e-09
+  },
+  "publicado_sha256": "8efedad8010d3fa4093494aae8b5f970c2adbed4a049cf58d612df7b74f73b8d",
+  "publicado_kb": 181.8
+}
