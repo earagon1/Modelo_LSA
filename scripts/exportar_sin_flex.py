@@ -23,7 +23,7 @@ from datetime import date
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from lsa.export import convertir, inferir_tflite, ops_flex  # noqa: E402
+from lsa.export import convertir, inferir_tflite, ops_flex
 
 T, D = 15, 126
 POR_CLASE_FIXTURE = 2
@@ -95,7 +95,7 @@ def main():
     # Las probabilidades esperadas se recalculan sobre la entrada redondeada que
     # efectivamente queda en el JSON, para que la comparación sea exacta.
     entradas = np.asarray([c["entrada"] for c in fixture["casos"]], np.float32)
-    for c, p in zip(fixture["casos"], inferir_tflite(tfl, entradas)):
+    for c, p in zip(fixture["casos"], inferir_tflite(tfl, entradas), strict=True):
         c["probs"] = p.tolist()
 
     os.makedirs(args.salida, exist_ok=True)
