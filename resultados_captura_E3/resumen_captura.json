@@ -1,0 +1,67 @@
+{
+  "P1": {
+    "dispositivos": [
+      "LENOVO TB321FU"
+    ],
+    "android": [
+      "16"
+    ],
+    "tomas": 106,
+    "fps_mediana": 17.1,
+    "fps_min": 11.3,
+    "fps_max": 18.0,
+    "frames_por_toma": {
+      "15": 106
+    },
+    "duracion_captura_ms_mediana": 875.5,
+    "minutos_sesion": 9.8,
+    "pct_frames_dos_manos": {
+      "adios": 0,
+      "bien": 0,
+      "como estas": 52,
+      "e": 0,
+      "gracias": 0,
+      "hola": 0,
+      "i": 0,
+      "l": 0,
+      "mi nombre es": 0,
+      "n": 0,
+      "nada": 35,
+      "por favor": 78,
+      "v": 0
+    }
+  },
+  "P2": {
+    "dispositivos": [
+      "OnePlus CPH2663"
+    ],
+    "android": [
+      "16"
+    ],
+    "tomas": 106,
+    "fps_mediana": 7.7,
+    "fps_min": 6.1,
+    "fps_max": 14.0,
+    "frames_por_toma": {
+      "10": 62,
+      "15": 44
+    },
+    "duracion_captura_ms_mediana": 1418.0,
+    "minutos_sesion": 19.4,
+    "pct_frames_dos_manos": {
+      "adios": 0,
+      "bien": 0,
+      "como estas": 24,
+      "e": 0,
+      "gracias": 1,
+      "hola": 0,
+      "i": 0,
+      "l": 0,
+      "mi nombre es": 0,
+      "n": 0,
+      "nada": 21,
+      "por favor": 55,
+      "v": 0
+    }
+  }
+}
