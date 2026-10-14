@@ -52,18 +52,38 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--frames", default=os.path.join(RAIZ, "frame_actions"))
     ap.add_argument("--salida", default=os.path.join(RAIZ, "data", "landmarks", "webcam_v2.jsonl"))
+    ap.add_argument("--continuar", action="store_true", help="retomar el .parcial de una corrida cortada")
     args = ap.parse_args()
     if os.path.exists(args.salida):
         print(f"{args.salida} ya existe: no se pisa. Borrarlo a mano si se quiere regenerar.")
         return 1
     os.makedirs(os.path.dirname(args.salida), exist_ok=True)
 
+    # Una corrida larga se puede cortar (la primera se cortó a las 1014 tomas). Con
+    # --continuar se conservan las líneas completas del .parcial y se sigue desde ahí.
+    parcial = args.salida + ".parcial"
+    hechas = set()
+    if args.continuar and os.path.exists(parcial):
+        validas = []
+        with open(parcial, encoding="utf-8") as f:
+            for linea in f:
+                try:
+                    hechas.add(json.loads(linea)["uuid"])
+                    validas.append(linea)
+                except (json.JSONDecodeError, KeyError):
+                    break  # una línea a medio escribir: de ahí en adelante se rehace
+        with open(parcial, "w", encoding="utf-8", newline="\n") as f:
+            f.writelines(validas)
+        print(f"retomando: {len(hechas)} tomas ya extraídas", flush=True)
+
     ext = Extractor()
-    total, sin_manos, inicio = 0, 0, time.time()
-    with open(args.salida + ".parcial", "w", encoding="utf-8", newline="\n") as out:
+    total, sin_manos, inicio = len(hechas), 0, time.time()
+    with open(parcial, "a" if hechas else "w", encoding="utf-8", newline="\n") as out:
         for clase in sorted(os.listdir(args.frames)):
             dir_clase = os.path.join(args.frames, clase)
             for orden, carpeta in enumerate(sorted(os.listdir(dir_clase)), 1):
+                if str(uuid.uuid5(uuid.NAMESPACE_URL, f"webcam/{clase}/{carpeta}")) in hechas:
+                    continue
                 dir_toma = os.path.join(dir_clase, carpeta)
                 archivos = sorted((f for f in os.listdir(dir_toma) if f.lower().endswith(".jpg")), key=numero)
                 frames, ancho, alto = [], 0, 0
@@ -97,7 +117,7 @@ def main():
                 if total % 100 == 0:
                     print(f"{total} tomas ({time.time() - inicio:.0f} s)", flush=True)
     ext.cerrar()
-    os.replace(args.salida + ".parcial", args.salida)
+    os.replace(parcial, args.salida)
     print(f"{total} tomas -> {args.salida}; {sin_manos} sin ninguna mano detectada; {time.time() - inicio:.0f} s")
     return 0
 

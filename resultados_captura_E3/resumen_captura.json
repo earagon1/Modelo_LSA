@@ -63,5 +63,38 @@
       "por favor": 55,
       "v": 0
     }
+  },
+  "P3": {
+    "dispositivos": [
+      "samsung SM-A556E"
+    ],
+    "android": [
+      "16"
+    ],
+    "tomas": 106,
+    "fps_mediana": 6.3,
+    "fps_min": 4.8,
+    "fps_max": 12.1,
+    "frames_por_toma": {
+      "10": 96,
+      "15": 10
+    },
+    "duracion_captura_ms_mediana": 1612.5,
+    "minutos_sesion": 30.0,
+    "pct_frames_dos_manos": {
+      "adios": 0,
+      "bien": 1,
+      "como estas": 54,
+      "e": 0,
+      "gracias": 1,
+      "hola": 5,
+      "i": 0,
+      "l": 0,
+      "mi nombre es": 12,
+      "n": 0,
+      "nada": 24,
+      "por favor": 88,
+      "v": 8
+    }
   }
 }
