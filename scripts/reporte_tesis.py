@@ -7,10 +7,12 @@ el capítulo de resultados, siempre desde los JSON de las corridas, nunca a mano
   2. La fuga del esquema viejo, cuantificada contra la validación por persona.
   3. Accuracy por persona y F1 por seña: modelo original contra el nuevo (LOPO).
   4. La comparativa de la sesión de captura por dispositivo (resumen_captura.py).
+  5. El federado con personas reales y la calibración (sus corridas más recientes).
 
 Uso, desde la raíz de modelo_LSA:
     python scripts/reporte_tesis.py resultados_validacion_v2/<corrida>
 """
+import glob
 import json
 import os
 import sys
@@ -102,6 +104,18 @@ def main():
         with open(captura, encoding="utf-8") as f:
             cuerpo = f.read().split("\n", 4)[-1]  # sin el título ni el aviso de generación
         md += ["", "## 5. Sesión de captura por dispositivo", "", cuerpo.strip()]
+
+    # Las corridas más recientes del federado y de la calibración, si existen.
+    for titulo, patron in (("6. Aprendizaje federado con personas reales",
+                            os.path.join(RAIZ, "federated", "resultados_personas_*")),
+                           ("7. Calibración y umbral de la app",
+                            os.path.join(RAIZ, "resultados_calibracion", "20*"))):
+        corridas = sorted(glob.glob(patron))
+        resumen = os.path.join(corridas[-1], "resumen.md") if corridas else None
+        if resumen and os.path.exists(resumen):
+            with open(resumen, encoding="utf-8") as f:
+                cuerpo = f.read().split("\n", 1)[-1]  # sin el título propio
+            md += ["", f"## {titulo}", "", f"Fuente: `{os.path.relpath(corridas[-1], RAIZ)}`.", "", cuerpo.strip()]
 
     md += ["", "## Tabla de escenarios en LaTeX (booktabs)", "", "```latex", *tex, "```", ""]
     os.makedirs(SALIDA, exist_ok=True)
