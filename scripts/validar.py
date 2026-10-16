@@ -1,7 +1,7 @@
 """Validación honesta del modelo con todas las fuentes (PY-E3).
 
 Esquemas (cada uno contesta otra pregunta):
-  publicado          ¿Cuánto acierta HOY la app con personas nuevas? El .tflite de la app
+  publicado          ¿Cuánto acertaba la app original con personas nuevas? El modelo original
                      sobre la secuencia exacta que la app calculó en cada toma de la sesión.
   webcam_a_telefono  ¿Alcanza con la webcam? Entrena solo con la webcam (como el modelo
                      publicado, pero con el contrato v2) y evalúa en los teléfonos.
@@ -32,8 +32,11 @@ from lsa import dataset as ds
 
 RAIZ = ds.RAIZ
 ESQUEMAS = ["publicado", "webcam_a_telefono", "persona", "sesion", "estratificado"]
-APP_TFLITE = os.path.normpath(os.path.join(RAIZ, "..", "..", "TraductorLSA", "app", "src", "main", "assets",
-                                           "actions_15_opt.tflite"))
+# El modelo con el que arrancó la tesis (entrenado solo con la webcam, contrato v1),
+# en su versión sin Flex: mismas predicciones que el publicado hasta el 2026-10-16.
+# Es el punto de partida fijo del esquema "publicado". No se lee de los assets de la
+# app: ahí ahora está el modelo nuevo, que ya vio estas mismas tomas.
+MODELO_ORIGINAL = os.path.join(RAIZ, "referencia", "modelo_original_sin_flex.tflite")
 
 
 def metricas(y_true, y_pred, clases):
@@ -71,10 +74,10 @@ def entrenar(X, y, n_clases, semilla, epocas, verbose=0):
     return modelo
 
 
-def acumular(destino, d, mascara_test, pred):
+def acumular(destino, d, mascara_test, pred, semilla=0):
     for i, p in zip(np.where(mascara_test)[0], pred, strict=True):
         destino.append({"y": int(d.y[i]), "pred": int(p), "persona": str(d.persona[i]),
-                        "fuente": str(d.fuente[i]), "dispositivo": str(d.dispositivo[i])})
+                        "fuente": str(d.fuente[i]), "dispositivo": str(d.dispositivo[i]), "semilla": semilla})
 
 
 def resumir(predicciones, clases):
@@ -86,13 +89,26 @@ def resumir(predicciones, clases):
             m = np.array([p[campo] == valor for p in predicciones])
             r = metricas(y[m], pr[m], clases)
             out[clave][valor] = {k: r[k] for k in ("n", "accuracy", "f1_macro")}
+    # Cada semilla es una repetición completa del esquema: la media y el desvío entre
+    # semillas son los que van al informe, y las listas permiten un t-test pareado.
+    semillas = sorted({p.get("semilla", 0) for p in predicciones})
+    acc, f1 = [], []
+    for sem in semillas:
+        m = np.array([p.get("semilla", 0) == sem for p in predicciones])
+        r = metricas(y[m], pr[m], clases)
+        acc.append(r["accuracy"])
+        f1.append(r["f1_macro"])
+    desvio = lambda v: float(np.std(v, ddof=1)) if len(v) > 1 else 0.0  # noqa: E731
+    out["por_semilla"] = {"semillas": semillas, "accuracy": acc, "f1_macro": f1,
+                          "accuracy_media": float(np.mean(acc)), "accuracy_desvio": desvio(acc),
+                          "f1_media": float(np.mean(f1)), "f1_desvio": desvio(f1)}
     return out
 
 
 def esquema_publicado(clases_modelo, umbral=0.7):
-    """El .tflite de la app sobre la secuencia v1 que la app guardó en cada toma de la sesión."""
+    """El modelo original sobre la secuencia v1 que la app guardó en cada toma de la sesión."""
     from lsa.export import inferir_tflite
-    with open(APP_TFLITE, "rb") as f:
+    with open(MODELO_ORIGINAL, "rb") as f:
         tfl = f.read()
     indice = {c: i for i, c in enumerate(clases_modelo)}
     predicciones, confianzas = [], []
@@ -130,7 +146,13 @@ def main():
     ap.add_argument("--etiqueta", default="run")
     args = ap.parse_args()
 
+    import tensorflow as tf
     from sklearn.model_selection import StratifiedGroupKFold, StratifiedKFold
+
+    # Memoria de GPU a demanda: si no, TF toma toda la placa y otro proceso (por
+    # ejemplo, el entrenamiento del modelo final) no puede usarla al mismo tiempo.
+    for gpu in tf.config.list_physical_devices("GPU"):
+        tf.config.experimental.set_memory_growth(gpu, True)
 
     salida = os.path.join(RAIZ, "resultados_validacion_v2", f"{date.today().isoformat()}_{args.etiqueta}")
     os.makedirs(salida, exist_ok=True)
@@ -164,23 +186,25 @@ def main():
                 for k, (tr, te) in enumerate(pliegues):
                     modelo = entrenar(d.X[tr], d.y[tr], C, semilla, args.epocas)
                     pred = modelo.predict(d.X[te], verbose=0).argmax(1)
-                    acumular(predicciones, d, te, pred)
+                    acumular(predicciones, d, te, pred, semilla)
                     print(f"  {esquema} semilla {semilla} pliegue {k + 1}/{len(pliegues)}: "
                           f"acc {np.mean(pred == d.y[te]):.3f} (n={te.sum()})", flush=True)
             resultados["esquemas"][esquema] = resumir(predicciones, d.clases)
         g = resultados["esquemas"][esquema]["global"]
         print(f"{esquema}: accuracy {g['accuracy']:.3f}, F1 macro {g['f1_macro']:.3f} "
               f"({time.time() - t0:.0f} s)", flush=True)
+        # Se guarda después de cada esquema: si la corrida se corta, lo hecho queda.
+        with open(os.path.join(salida, "resultados.json"), "w", encoding="utf-8") as f:
+            json.dump(resultados, f, indent=2, ensure_ascii=False)
 
-    with open(os.path.join(salida, "resultados.json"), "w", encoding="utf-8") as f:
-        json.dump(resultados, f, indent=2, ensure_ascii=False)
-
-    md = [f"# Validación v2 ({resultados['datos']})", "", "| Esquema | n | Accuracy | F1 macro | Por persona |",
+    md = [f"# Validación v2 ({resultados['datos']})", "", f"Semillas: {args.semillas}", "",
+          "| Esquema | n | Accuracy (media ± desvío) | F1 macro (media ± desvío) | Por persona |",
           "|---|---|---|---|---|"]
     for esquema, r in resultados["esquemas"].items():
-        g = r["global"]
+        s = r["por_semilla"]
         pp = ", ".join(f"{p}: {v['accuracy']:.2f}" for p, v in r["por_persona"].items())
-        md.append(f"| {esquema} | {g['n']} | {g['accuracy']:.3f} | {g['f1_macro']:.3f} | {pp} |")
+        md.append(f"| {esquema} | {r['global']['n']} | {s['accuracy_media']:.3f} ± {s['accuracy_desvio']:.3f} "
+                  f"| {s['f1_media']:.3f} ± {s['f1_desvio']:.3f} | {pp} |")
     if "publicado" in resultados["esquemas"]:
         r = resultados["esquemas"]["publicado"]
         md += ["", f"Modelo publicado: la app muestra el {100 * r['mostradas']:.0f} % de las predicciones "

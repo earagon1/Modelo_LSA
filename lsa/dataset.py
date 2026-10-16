@@ -61,9 +61,11 @@ def _grupo_sesion(m: dict) -> str:
     s = m["sesion"]
     if m.get("fuente") == "webcam":
         return f"webcam-{s.get('sesion_id', 'desconocida')}"
-    # En el teléfono, cada tanda es una sesión (hubo una pausa entre las dos), y las
-    # tomas de "nada" son un bloque aparte.
-    return f"{s['codigo']}-{s['bloque']}{s['tanda']}"
+    # En el teléfono, cada tanda es una sesión (hubo una pausa entre las dos). Las 10
+    # tomas de "nada" se grabaron enseguida de la tanda 2 y van con ella: solas eran
+    # un grupo tan chico que StratifiedGroupKFold armaba un pliegue de 10 muestras.
+    tanda = 2 if s["bloque"] == "N" else s["tanda"]
+    return f"{s['codigo']}-A{tanda}"
 
 
 def cargar(incluir_nada: bool = True, fuentes: tuple[str, ...] = ("webcam", "telefono")) -> Dataset:

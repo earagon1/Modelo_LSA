@@ -36,7 +36,7 @@ def test_cargar_arma_los_metadatos(tmp_path, monkeypatch):
     assert d.clases[-1] == "nada" and d.clases[d.y[2]] == "nada"
     assert d.persona.tolist() == ["P1", "P2", "P2"]
     assert d.fuente.tolist() == ["webcam", "telefono", "telefono"]
-    assert d.sesion.tolist() == ["webcam-2025-10-23", "P2-A1", "P2-N1"]
+    assert d.sesion.tolist() == ["webcam-2025-10-23", "P2-A1", "P2-A2"]
     assert d.excluidas == {"prueba": 1, "pocos_frames": 2}
     sub = d.subconjunto(d.persona == "P2")
     assert len(sub.y) == 2 and np.all(sub.persona == "P2")
