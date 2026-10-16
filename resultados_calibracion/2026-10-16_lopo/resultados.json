@@ -1,0 +1,372 @@
+{
+  "config": {
+    "semillas": [
+      0,
+      1,
+      2
+    ],
+    "acierto_objetivo": 0.85,
+    "etiqueta": "lopo"
+  },
+  "datos": "1409 muestras, 13 clases | persona: {'P1': 1197, 'P2': 106, 'P3': 106} | fuente: {'telefono': 318, 'webcam': 1091} | excluidas: {'pocos_frames': 109}",
+  "pliegues": [
+    {
+      "semilla": 0,
+      "persona": "P1",
+      "temperatura": 1.2399416563637764,
+      "accuracy": 0.6132075471698113,
+      "ece_sin": 0.15986019344824665,
+      "ece_con": 0.1305103487563583,
+      "logloss_sin": 1.2806785106658936,
+      "logloss_con": 1.1657402515411377
+    },
+    {
+      "semilla": 0,
+      "persona": "P2",
+      "temperatura": 1.4867530168790484,
+      "accuracy": 0.8018867924528302,
+      "ece_sin": 0.17732837346364866,
+      "ece_con": 0.12969233348684495,
+      "logloss_sin": 1.028024673461914,
+      "logloss_con": 0.8253635764122009
+    },
+    {
+      "semilla": 0,
+      "persona": "P3",
+      "temperatura": 1.0765016392710371,
+      "accuracy": 0.7075471698113207,
+      "ece_sin": 0.18305161876498532,
+      "ece_con": 0.17049282058229986,
+      "logloss_sin": 1.533040165901184,
+      "logloss_con": 1.4528441429138184
+    },
+    {
+      "semilla": 1,
+      "persona": "P1",
+      "temperatura": 1.168572317153492,
+      "accuracy": 0.46226415094339623,
+      "ece_sin": 0.26039170937718087,
+      "ece_con": 0.22726375764270998,
+      "logloss_sin": 1.8848752975463867,
+      "logloss_con": 1.7394410371780396
+    },
+    {
+      "semilla": 1,
+      "persona": "P2",
+      "temperatura": 1.5196780661684826,
+      "accuracy": 0.7169811320754716,
+      "ece_sin": 0.1756261348162057,
+      "ece_con": 0.13547069565305173,
+      "logloss_sin": 1.3570597171783447,
+      "logloss_con": 1.0556894540786743
+    },
+    {
+      "semilla": 1,
+      "persona": "P3",
+      "temperatura": 1.4661123213658642,
+      "accuracy": 0.7169811320754716,
+      "ece_sin": 0.21298614228671456,
+      "ece_con": 0.1461640169035714,
+      "logloss_sin": 1.564466953277588,
+      "logloss_con": 1.1798620223999023
+    },
+    {
+      "semilla": 2,
+      "persona": "P1",
+      "temperatura": 1.2007776952920108,
+      "accuracy": 0.5377358490566038,
+      "ece_sin": 0.21768106941906912,
+      "ece_con": 0.19451867212664403,
+      "logloss_sin": 1.7083723545074463,
+      "logloss_con": 1.5516142845153809
+    },
+    {
+      "semilla": 2,
+      "persona": "P2",
+      "temperatura": 1.1386212922915961,
+      "accuracy": 0.7358490566037735,
+      "ece_sin": 0.15031107669731353,
+      "ece_con": 0.1544814607444799,
+      "logloss_sin": 1.0815125703811646,
+      "logloss_con": 1.0000910758972168
+    },
+    {
+      "semilla": 2,
+      "persona": "P3",
+      "temperatura": 0.9979109745766619,
+      "accuracy": 0.7264150943396226,
+      "ece_sin": 0.15355235422557256,
+      "ece_con": 0.1449280282798803,
+      "logloss_sin": 1.0177854299545288,
+      "logloss_con": 1.0190080404281616
+    }
+  ],
+  "temperatura_app": 1.2007776952920108,
+  "umbral_app": {
+    "umbral": 0.85,
+    "mostradas": 0.4968553459119497,
+    "acierto_mostradas": 0.8713080168776371
+  },
+  "umbral_actual_sin_calibrar": {
+    "umbral": 0.7,
+    "mostradas": 0.6907756813417191,
+    "acierto_mostradas": 0.7754172989377845
+  },
+  "ece_sin": 0.17098108515049676,
+  "ece_con": 0.12720376587388899,
+  "curva_sin_calibrar": [
+    {
+      "umbral": 0.3,
+      "mostradas": 0.9150943396226415,
+      "acierto_mostradas": 0.6735395189003437
+    },
+    {
+      "umbral": 0.35,
+      "mostradas": 0.9046121593291404,
+      "acierto_mostradas": 0.6790266512166859
+    },
+    {
+      "umbral": 0.4,
+      "mostradas": 0.8951781970649895,
+      "acierto_mostradas": 0.6838407494145199
+    },
+    {
+      "umbral": 0.45,
+      "mostradas": 0.8825995807127882,
+      "acierto_mostradas": 0.6876484560570071
+    },
+    {
+      "umbral": 0.5,
+      "mostradas": 0.860587002096436,
+      "acierto_mostradas": 0.7015834348355664
+    },
+    {
+      "umbral": 0.55,
+      "mostradas": 0.8165618448637316,
+      "acierto_mostradas": 0.7265725288831836
+    },
+    {
+      "umbral": 0.6,
+      "mostradas": 0.7704402515723271,
+      "acierto_mostradas": 0.7401360544217687
+    },
+    {
+      "umbral": 0.65,
+      "mostradas": 0.7274633123689728,
+      "acierto_mostradas": 0.7593659942363112
+    },
+    {
+      "umbral": 0.7,
+      "mostradas": 0.6907756813417191,
+      "acierto_mostradas": 0.7754172989377845
+    },
+    {
+      "umbral": 0.75,
+      "mostradas": 0.6530398322851153,
+      "acierto_mostradas": 0.8009630818619583
+    },
+    {
+      "umbral": 0.8,
+      "mostradas": 0.6236897274633124,
+      "acierto_mostradas": 0.8134453781512605
+    },
+    {
+      "umbral": 0.85,
+      "mostradas": 0.5786163522012578,
+      "acierto_mostradas": 0.8315217391304348
+    },
+    {
+      "umbral": 0.9,
+      "mostradas": 0.5209643605870021,
+      "acierto_mostradas": 0.8571428571428571
+    },
+    {
+      "umbral": 0.95,
+      "mostradas": 0.4329140461215933,
+      "acierto_mostradas": 0.8789346246973365
+    }
+  ],
+  "curva_calibrada": [
+    {
+      "umbral": 0.3,
+      "mostradas": 0.9119496855345912,
+      "acierto_mostradas": 0.674712643678161
+    },
+    {
+      "umbral": 0.35,
+      "mostradas": 0.8972746331236897,
+      "acierto_mostradas": 0.6822429906542056
+    },
+    {
+      "umbral": 0.4,
+      "mostradas": 0.8857442348008385,
+      "acierto_mostradas": 0.685207100591716
+    },
+    {
+      "umbral": 0.45,
+      "mostradas": 0.8626834381551363,
+      "acierto_mostradas": 0.6962332928311057
+    },
+    {
+      "umbral": 0.5,
+      "mostradas": 0.8165618448637316,
+      "acierto_mostradas": 0.7252888318356868
+    },
+    {
+      "umbral": 0.55,
+      "mostradas": 0.7651991614255765,
+      "acierto_mostradas": 0.7397260273972602
+    },
+    {
+      "umbral": 0.6,
+      "mostradas": 0.7180293501048218,
+      "acierto_mostradas": 0.7635036496350365
+    },
+    {
+      "umbral": 0.65,
+      "mostradas": 0.6666666666666666,
+      "acierto_mostradas": 0.7861635220125787
+    },
+    {
+      "umbral": 0.7,
+      "mostradas": 0.6289308176100629,
+      "acierto_mostradas": 0.8083333333333333
+    },
+    {
+      "umbral": 0.75,
+      "mostradas": 0.5964360587002097,
+      "acierto_mostradas": 0.8295254833040422
+    },
+    {
+      "umbral": 0.8,
+      "mostradas": 0.5566037735849056,
+      "acierto_mostradas": 0.8436911487758946
+    },
+    {
+      "umbral": 0.85,
+      "mostradas": 0.4968553459119497,
+      "acierto_mostradas": 0.8713080168776371
+    },
+    {
+      "umbral": 0.9,
+      "mostradas": 0.4412997903563941,
+      "acierto_mostradas": 0.8883610451306413
+    },
+    {
+      "umbral": 0.95,
+      "mostradas": 0.32914046121593293,
+      "acierto_mostradas": 0.89171974522293
+    }
+  ],
+  "confiabilidad": {
+    "sin": [
+      {
+        "desde": 0.30000000000000004,
+        "hasta": 0.4,
+        "n": 22,
+        "confianza": 0.35481229424476624,
+        "acierto": 0.18181818181818182
+      },
+      {
+        "desde": 0.4,
+        "hasta": 0.5,
+        "n": 39,
+        "confianza": 0.46099165081977844,
+        "acierto": 0.28205128205128205
+      },
+      {
+        "desde": 0.5,
+        "hasta": 0.6000000000000001,
+        "n": 92,
+        "confianza": 0.5520154237747192,
+        "acierto": 0.3695652173913043
+      },
+      {
+        "desde": 0.6000000000000001,
+        "hasta": 0.7000000000000001,
+        "n": 80,
+        "confianza": 0.6475779414176941,
+        "acierto": 0.425
+      },
+      {
+        "desde": 0.7000000000000001,
+        "hasta": 0.8,
+        "n": 74,
+        "confianza": 0.7451578378677368,
+        "acierto": 0.44594594594594594
+      },
+      {
+        "desde": 0.8,
+        "hasta": 0.9,
+        "n": 117,
+        "confianza": 0.853772759437561,
+        "acierto": 0.5897435897435898
+      },
+      {
+        "desde": 0.9,
+        "hasta": 1.0,
+        "n": 530,
+        "confianza": 0.9768050312995911,
+        "acierto": 0.8547169811320755
+      }
+    ],
+    "con": [
+      {
+        "desde": 0.2,
+        "hasta": 0.30000000000000004,
+        "n": 3,
+        "confianza": 0.27181461453437805,
+        "acierto": 0.3333333333333333
+      },
+      {
+        "desde": 0.30000000000000004,
+        "hasta": 0.4,
+        "n": 30,
+        "confianza": 0.3478184640407562,
+        "acierto": 0.26666666666666666
+      },
+      {
+        "desde": 0.4,
+        "hasta": 0.5,
+        "n": 74,
+        "confianza": 0.4581153392791748,
+        "acierto": 0.24324324324324326
+      },
+      {
+        "desde": 0.5,
+        "hasta": 0.6000000000000001,
+        "n": 104,
+        "confianza": 0.5506128072738647,
+        "acierto": 0.4519230769230769
+      },
+      {
+        "desde": 0.6000000000000001,
+        "hasta": 0.7000000000000001,
+        "n": 91,
+        "confianza": 0.6464403867721558,
+        "acierto": 0.46153846153846156
+      },
+      {
+        "desde": 0.7000000000000001,
+        "hasta": 0.8,
+        "n": 80,
+        "confianza": 0.7531712055206299,
+        "acierto": 0.525
+      },
+      {
+        "desde": 0.8,
+        "hasta": 0.9,
+        "n": 131,
+        "confianza": 0.8515447974205017,
+        "acierto": 0.6870229007633588
+      },
+      {
+        "desde": 0.9,
+        "hasta": 1.0,
+        "n": 441,
+        "confianza": 0.96454256772995,
+        "acierto": 0.8843537414965986
+      }
+    ]
+  }
+}
