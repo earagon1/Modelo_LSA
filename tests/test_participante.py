@@ -7,7 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "federated"))
+sys.path.append(str(Path(__file__).resolve().parent.parent / "federated"))
 from data import SIN_CLIENTE, cargar_lsa_json, id_participante, partition_by_client, seudonimo_participante
 
 

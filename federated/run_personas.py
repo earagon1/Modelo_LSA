@@ -1,0 +1,222 @@
+"""
+Aprendizaje federado con las personas reales de la sesión de captura (PY-F2 + PY-F3).
+
+Cada persona (P1, P2, P3) es un cliente con las tomas de su propio teléfono. El
+servidor arranca de un modelo base entrenado solo con la webcam de P1, con las LSTM
+congeladas: los clientes entrenan y suben únicamente la cabeza (`cabeza.py`). P2 y P3
+nunca entran al backbone, que es lo que hace limpio el experimento para ellos.
+
+Experimentos (por semilla):
+
+A. Federado con una persona afuera (LOPO federado). Para cada persona p:
+     base        el modelo del servidor, sin federar, evaluado en p
+     fedavg      FedAvg de la cabeza con las otras dos personas, evaluado en p
+     fedavg_8b   lo mismo subiendo deltas cuantizados a 8 bits
+     techo       la cabeza entrenada con los datos de las otras dos juntos (centralizado)
+     piso        la cabeza entrenada con una sola de las otras personas (promedio)
+   Más la curva por ronda y las rondas hasta llegar al 95 % del techo.
+
+B. Personalización de un usuario nuevo: el modelo federado sin p se ajusta con la
+   tanda 1 de p y se evalúa con su tanda 2 (contra el mismo modelo sin ajustar).
+
+C. Personalización de un miembro: FedAvg con la tanda 1 de las tres personas; cada
+   una evalúa en su tanda 2 el modelo global y el global ajustado con su tanda 1.
+
+B y C se comparan con un t-test pareado (personas × semillas).
+
+Uso, desde la raíz de modelo_LSA (con la GPU en el PATH, ver CLAUDE.md):
+    python federated/run_personas.py --semillas 0 1 2
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+import time
+from datetime import date
+
+import numpy as np
+
+AQUI = os.path.dirname(os.path.abspath(__file__))
+RAIZ = os.path.dirname(AQUI)
+sys.path.insert(0, AQUI)
+sys.path.insert(1, RAIZ)
+sys.path.insert(2, os.path.join(RAIZ, "scripts"))
+
+import cabeza  # noqa: E402
+
+
+def a1h(y, c):
+    import tensorflow as tf
+    return tf.keras.utils.to_categorical(y, c)
+
+
+def acc(modelo, X, y1h):
+    return float(modelo.evaluate(X, y1h, verbose=0)[1])
+
+
+def entrenar_cabeza(base, X, y1h, epocas, d, c, lr):
+    m = cabeza.construir(base, d.X.shape[1], d.X.shape[2], c, lr)
+    m.fit(X, y1h, epochs=epocas, batch_size=8, shuffle=True, verbose=0)
+    return m
+
+
+def rondas_hasta(historia, objetivo):
+    for r, a in zip(historia["ronda"], historia["accuracy"], strict=True):
+        if a >= objetivo:
+            return r
+    return None
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--semillas", nargs="+", type=int, default=[0, 1, 2])
+    ap.add_argument("--rondas", type=int, default=40)
+    ap.add_argument("--epocas-locales", type=int, default=2)
+    ap.add_argument("--epocas-personalizacion", type=int, default=10)
+    ap.add_argument("--lr", type=float, default=1e-3)
+    ap.add_argument("--etiqueta", default="personas")
+    args = ap.parse_args()
+
+    import tensorflow as tf
+    from scipy.stats import ttest_rel
+    from validar import entrenar
+
+    from lsa import dataset as ds
+
+    for gpu in tf.config.list_physical_devices("GPU"):
+        tf.config.experimental.set_memory_growth(gpu, True)
+
+    salida = os.path.join(RAIZ, "federated", f"resultados_personas_{date.today().isoformat()}_{args.etiqueta}")
+    os.makedirs(salida, exist_ok=True)
+    d = ds.cargar(incluir_nada=True)
+    C = len(d.clases)
+    tel = d.fuente == "telefono"
+    personas = sorted(set(d.persona[tel].tolist()))
+    print(d.resumen(), "| clientes:", personas, flush=True)
+    total_ep = args.rondas * args.epocas_locales  # mismo presupuesto de épocas para techo y piso
+
+    filas_a, filas_b, filas_c, curvas = [], [], [], []
+    for semilla in args.semillas:
+        t0 = time.time()
+        tf.keras.utils.set_random_seed(semilla)
+        web = d.fuente == "webcam"
+        base = entrenar(d.X[web], d.y[web], C, semilla, 300).get_weights()
+
+        def datos(mascara):
+            return d.X[mascara], a1h(d.y[mascara], C)
+
+        for p in personas:
+            Xp, yp = datos(tel & (d.persona == p))
+            otros = [q for q in personas if q != p]
+            clientes = [datos(tel & (d.persona == q)) for q in otros]
+
+            m = cabeza.construir(base, d.X.shape[1], d.X.shape[2], C, args.lr)
+            fila = {"semilla": semilla, "persona": p, "base": acc(m, Xp, yp)}
+            final, hist = cabeza.fedavg(m, clientes, Xp, yp, args.rondas, args.epocas_locales, semilla=semilla)
+            fila["fedavg"] = hist["accuracy"][-1]
+            fila["bytes_fedavg"] = hist["bytes_subida"][-1]
+            m8 = cabeza.construir(base, d.X.shape[1], d.X.shape[2], C, args.lr)
+            _, hist8 = cabeza.fedavg(m8, clientes, Xp, yp, args.rondas, args.epocas_locales, bits=8, semilla=semilla)
+            fila["fedavg_8b"] = hist8["accuracy"][-1]
+            fila["bytes_fedavg_8b"] = hist8["bytes_subida"][-1]
+            Xu = np.concatenate([x for x, _ in clientes])
+            yu = np.concatenate([y for _, y in clientes])
+            fila["techo"] = acc(entrenar_cabeza(base, Xu, yu, total_ep, d, C, args.lr), Xp, yp)
+            fila["piso"] = float(np.mean([acc(entrenar_cabeza(base, x, y, total_ep, d, C, args.lr), Xp, yp)
+                                          for x, y in clientes]))
+            fila["rondas_95_techo"] = rondas_hasta(hist, 0.95 * fila["techo"])
+            fila["n_parametros_cabeza"] = cabeza.n_parametros_cabeza(m)
+            filas_a.append(fila)
+            curvas.append({"semilla": semilla, "persona": p, "accuracy": hist["accuracy"],
+                           "accuracy_8b": hist8["accuracy"], "bytes": hist["bytes_subida"],
+                           "bytes_8b": hist8["bytes_subida"]})
+
+            # B: usuario nuevo. El modelo federado sin p se ajusta con su tanda 1.
+            t1, t2 = d.sesion == f"{p}-A1", d.sesion == f"{p}-A2"
+            X1, y1 = datos(tel & t1)
+            X2, y2 = datos(tel & t2)
+            cabeza.poner_cabeza(m, final)
+            sin = acc(m, X2, y2)
+            cabeza.entrenar_local(m, final, X1, y1, args.epocas_personalizacion)
+            filas_b.append({"semilla": semilla, "persona": p, "global": sin, "personalizado": acc(m, X2, y2)})
+            print(f"  semilla {semilla} {p}: base {fila['base']:.3f} fedavg {fila['fedavg']:.3f} "
+                  f"8b {fila['fedavg_8b']:.3f} techo {fila['techo']:.3f} piso {fila['piso']:.3f} | "
+                  f"nuevo: {sin:.3f} -> {filas_b[-1]['personalizado']:.3f}", flush=True)
+
+        # C: miembros. FedAvg con la tanda 1 de todos; cada uno evalúa en su tanda 2.
+        clientes_t1 = [datos(tel & (d.sesion == f"{q}-A1")) for q in personas]
+        X2_todos, y2_todos = datos(tel & np.isin(d.sesion, [f"{q}-A2" for q in personas]))
+        mc = cabeza.construir(base, d.X.shape[1], d.X.shape[2], C, args.lr)
+        global_c, _ = cabeza.fedavg(mc, clientes_t1, X2_todos, y2_todos, args.rondas, args.epocas_locales,
+                                    semilla=semilla)
+        for q, (X1, y1) in zip(personas, clientes_t1, strict=True):
+            X2, y2 = datos(tel & (d.sesion == f"{q}-A2"))
+            cabeza.poner_cabeza(mc, global_c)
+            sin = acc(mc, X2, y2)
+            cabeza.entrenar_local(mc, global_c, X1, y1, args.epocas_personalizacion)
+            filas_c.append({"semilla": semilla, "persona": q, "global": sin, "personalizado": acc(mc, X2, y2)})
+        print(f"semilla {semilla} lista ({time.time() - t0:.0f} s)", flush=True)
+
+        # Se guarda después de cada semilla: si la corrida se corta, lo hecho queda.
+        resumen = resumir(filas_a, filas_b, filas_c, ttest_rel)
+        with open(os.path.join(salida, "resultados.json"), "w", encoding="utf-8") as f:
+            json.dump({"config": vars(args), "datos": d.resumen(), "resumen": resumen, "lopo": filas_a,
+                       "usuario_nuevo": filas_b, "miembros": filas_c, "curvas": curvas}, f, indent=2,
+                      ensure_ascii=False)
+        escribir_md(salida, resumen, args)
+    print(f"\n-> {salida}")
+
+
+def media_desvio(v):
+    v = [x for x in v if x is not None]
+    return {"media": float(np.mean(v)), "desvio": float(np.std(v, ddof=1)) if len(v) > 1 else 0.0, "n": len(v)}
+
+
+def resumir(a, b, c, ttest_rel):
+    out = {"lopo": {k: media_desvio([f[k] for f in a]) for k in
+                    ("base", "fedavg", "fedavg_8b", "techo", "piso", "rondas_95_techo")}}
+    out["lopo"]["bytes_fedavg"] = int(np.mean([f["bytes_fedavg"] for f in a]))
+    out["lopo"]["bytes_fedavg_8b"] = int(np.mean([f["bytes_fedavg_8b"] for f in a]))
+    out["lopo"]["por_persona"] = {p: {k: media_desvio([f[k] for f in a if f["persona"] == p])["media"]
+                                      for k in ("base", "fedavg", "techo", "piso")}
+                                  for p in sorted({f["persona"] for f in a})}
+    for nombre, filas in (("usuario_nuevo", b), ("miembros", c)):
+        g = [f["global"] for f in filas]
+        pz = [f["personalizado"] for f in filas]
+        r = {"global": media_desvio(g), "personalizado": media_desvio(pz), "mejora_media": float(np.mean(
+            np.array(pz) - np.array(g)))}
+        if len(filas) > 1:
+            t = ttest_rel(pz, g)
+            r["t"], r["p"] = float(t.statistic), float(t.pvalue)
+        out[nombre] = r
+    return out
+
+
+def escribir_md(salida, r, args):
+    pct = lambda v: f"{100 * v:.1f}".replace(".", ",")  # noqa: E731
+    lo = r["lopo"]
+    md = ["# Aprendizaje federado con personas reales", "",
+          f"Rondas {args.rondas}, épocas locales {args.epocas_locales}, semillas {args.semillas}. "
+          f"Se entrena y se sube solo la cabeza; el backbone sale de la webcam de P1 y está congelado.", "",
+          "## A. Federado con una persona afuera", "", "| | Accuracy (%) |", "|---|---|"]
+    for k, nombre in (("base", "Modelo del servidor, sin federar"), ("piso", "Piso: una sola persona"),
+                      ("fedavg", "FedAvg (2 personas)"), ("fedavg_8b", "FedAvg con subida a 8 bits"),
+                      ("techo", "Techo: centralizado")):
+        md.append(f"| {nombre} | {pct(lo[k]['media'])} ± {pct(lo[k]['desvio'])} |")
+    md += ["", f"Subida total de los clientes en toda la corrida: {lo['bytes_fedavg'] / 1e6:.2f} MB en float32, "
+           f"{lo['bytes_fedavg_8b'] / 1e6:.2f} MB a 8 bits. Rondas hasta el 95 % del techo: "
+           f"{lo['rondas_95_techo']['media']:.1f} (n={lo['rondas_95_techo']['n']}).", ""]
+    for nombre, clave in (("B. Personalización de un usuario nuevo", "usuario_nuevo"),
+                          ("C. Personalización de un miembro", "miembros")):
+        x = r[clave]
+        md += [f"## {nombre}", "", f"Modelo global {pct(x['global']['media'])} % → personalizado con su tanda 1 "
+               f"{pct(x['personalizado']['media'])} % (mejora media {pct(x['mejora_media'])} puntos"
+               + (f"; t = {x['t']:.2f}, p = {x['p']:.4f}" if "p" in x else "") + ").", ""]
+    with open(os.path.join(salida, "resumen.md"), "w", encoding="utf-8", newline="\n") as f:
+        f.write("\n".join(md))
+
+
+if __name__ == "__main__":
+    main()
