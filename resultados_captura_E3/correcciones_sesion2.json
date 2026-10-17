@@ -1,0 +1,21 @@
+{
+  "descripcion": "Correcciones a la sesión 2 (robustez) informadas por Evelin durante la grabación. Los datos crudos no se editan: el análisis aplica estas anotaciones.",
+  "P3": {
+    "condicion_real": [
+      {
+        "ordenes": [107, 118],
+        "planilla": "luz=interior;angulo=0;distancia=lejos",
+        "real": "luz=sombra;angulo=0;distancia=lejos",
+        "nota": "Se grabaron a 120 cm y además con la luz del techo apagada: dos factores adversos juntos. Se analizan como 'lejos + poca luz', no como 'lejos' solo."
+      }
+    ],
+    "descartadas": [
+      {
+        "ordenes": [119, 130],
+        "condicion": "luz=interior;angulo=30;distancia=media",
+        "motivo": "Con el cuerpo girado 30° en el Galaxy A55 (6 FPS) el 52 % de los intentos se cortaba, la app detectaba manos que no estaban y quedaba esperando que se bajaran las manos aunque ya estaban abajo. Evelin juzgó mal hechas las 12 tomas: se borraron del teléfono (copia en D:/Respaldo-Tesis/2026-10-17/telefono_P3_A55_con_30grados/). La condición queda como 'no capturable de forma confiable en este dispositivo'.",
+        "evidencia_metricas": "13 de los últimos 25 intentos abortados por pérdida de la mano (senar_metrics del teléfono de P3, 2026-10-17)"
+      }
+    ]
+  }
+}
