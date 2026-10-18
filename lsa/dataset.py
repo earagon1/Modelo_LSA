@@ -6,6 +6,10 @@ Fuentes, todas con el esquema `senar-muestra-v2` (landmarks crudos por frame):
 
 Cada muestra trae los metadatos que necesita la validación honesta: persona, fuente,
 dispositivo y sesión. Las tomas de PRUEBA se descartan.
+
+Por defecto solo carga los bloques de la sesión 1 (A y N, y la webcam). El bloque B
+(robustez, sesión 2) vive en los mismos archivos pero no es entrenamiento: es el test
+de `scripts/robustez.py`, que lo pide con `bloques=("B",)`.
 """
 from __future__ import annotations
 
@@ -23,6 +27,10 @@ WEBCAM = os.path.join(RAIZ, "data", "landmarks", "webcam_v2.jsonl")
 TELEFONO = os.path.join(RAIZ, "data", "captura_E3", "*", "lsa_samples_v2.jsonl")
 WORDS_JSON = os.path.join(RAIZ, "models", "words.json")
 NADA = "nada"
+# A = tandas de señas, N = "nada", W = webcam (migrar_v1). B (robustez) y C (otro
+# dispositivo) son tests y no entran salvo que se pidan: si no, al sumar la sesión 2 a
+# los archivos de captura, todo lo que entrena cambiaba sin avisar.
+BLOQUES_ENTRENAMIENTO = ("W", "A", "N")
 
 
 @dataclass
@@ -34,11 +42,15 @@ class Dataset:
     fuente: np.ndarray               # webcam / telefono
     dispositivo: np.ndarray
     sesion: np.ndarray               # grupo para la validación por sesión
+    bloque: np.ndarray               # W, A, N, B...
+    condicion: np.ndarray            # "luz=...;angulo=...;distancia=..." de la planilla
+    orden: np.ndarray                # orden de la toma en la planilla del participante
     excluidas: dict = field(default_factory=dict)
 
     def subconjunto(self, mascara: np.ndarray) -> Dataset:
         return Dataset(self.X[mascara], self.y[mascara], self.clases, self.persona[mascara],
-                       self.fuente[mascara], self.dispositivo[mascara], self.sesion[mascara], self.excluidas)
+                       self.fuente[mascara], self.dispositivo[mascara], self.sesion[mascara],
+                       self.bloque[mascara], self.condicion[mascara], self.orden[mascara], self.excluidas)
 
     def resumen(self) -> str:
         from collections import Counter
@@ -64,11 +76,14 @@ def _grupo_sesion(m: dict) -> str:
     # En el teléfono, cada tanda es una sesión (hubo una pausa entre las dos). Las 10
     # tomas de "nada" se grabaron enseguida de la tanda 2 y van con ella: solas eran
     # un grupo tan chico que StratifiedGroupKFold armaba un pliegue de 10 muestras.
+    if s["bloque"] in ("B", "C"):
+        return f"{s['codigo']}-{s['bloque']}"
     tanda = 2 if s["bloque"] == "N" else s["tanda"]
     return f"{s['codigo']}-A{tanda}"
 
 
-def cargar(incluir_nada: bool = True, fuentes: tuple[str, ...] = ("webcam", "telefono")) -> Dataset:
+def cargar(incluir_nada: bool = True, fuentes: tuple[str, ...] = ("webcam", "telefono"),
+           bloques: tuple[str, ...] = BLOQUES_ENTRENAMIENTO) -> Dataset:
     clases = clases_del_modelo(incluir_nada)
     indice = {c: i for i, c in enumerate(clases)}
     rutas = []
@@ -77,7 +92,7 @@ def cargar(incluir_nada: bool = True, fuentes: tuple[str, ...] = ("webcam", "tel
     if "telefono" in fuentes:
         rutas += sorted(glob.glob(TELEFONO))
 
-    X, y, persona, fuente, dispositivo, sesion = [], [], [], [], [], []
+    X, y, persona, fuente, dispositivo, sesion, bloque, condicion, orden = [], [], [], [], [], [], [], [], []
     excluidas = {"prueba": 0, "fuera_de_sesion": 0, "clase_desconocida": 0, "pocos_frames": 0}
     for ruta in rutas:
         for m in dataset_v2.leer(ruta):
@@ -87,6 +102,8 @@ def cargar(incluir_nada: bool = True, fuentes: tuple[str, ...] = ("webcam", "tel
                 continue
             if s["codigo"] == "PRUEBA":
                 excluidas["prueba"] += 1
+                continue
+            if s["bloque"] not in bloques:
                 continue
             if m["label"] not in indice:
                 excluidas["clase_desconocida"] += 1
@@ -103,6 +120,9 @@ def cargar(incluir_nada: bool = True, fuentes: tuple[str, ...] = ("webcam", "tel
             fuente.append(m.get("fuente", "telefono"))
             dispositivo.append(m["dispositivo"])
             sesion.append(_grupo_sesion(m))
+            bloque.append(s["bloque"])
+            condicion.append(s.get("condicion", ""))
+            orden.append(int(s.get("orden", 0)))
     return Dataset(np.stack(X).astype(np.float32), np.asarray(y), clases, np.asarray(persona),
-                   np.asarray(fuente), np.asarray(dispositivo), np.asarray(sesion),
-                   {k: v for k, v in excluidas.items() if v})
+                   np.asarray(fuente), np.asarray(dispositivo), np.asarray(sesion), np.asarray(bloque),
+                   np.asarray(condicion), np.asarray(orden), {k: v for k, v in excluidas.items() if v})

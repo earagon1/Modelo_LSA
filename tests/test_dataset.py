@@ -26,7 +26,7 @@ def test_cargar_arma_los_metadatos(tmp_path, monkeypatch):
     tel = tmp_path / "captura" / "P2"
     tel.mkdir(parents=True)
     lineas = [_muestra("hola", "P2"), _muestra("nada", "P2", "N"), _muestra("bien", "PRUEBA"),
-              _muestra("hola", "P2", n_frames=3), _muestra("hola", "P2", manos=0)]
+              _muestra("hola", "P2", n_frames=3), _muestra("hola", "P2", manos=0), _muestra("v", "P2", "B")]
     (tel / "lsa_samples_v2.jsonl").write_text("\n".join(json.dumps(m) for m in lineas) + "\n")
     monkeypatch.setattr(ds, "WEBCAM", str(web))
     monkeypatch.setattr(ds, "TELEFONO", str(tmp_path / "captura" / "*" / "lsa_samples_v2.jsonl"))
@@ -40,6 +40,20 @@ def test_cargar_arma_los_metadatos(tmp_path, monkeypatch):
     assert d.excluidas == {"prueba": 1, "pocos_frames": 2}
     sub = d.subconjunto(d.persona == "P2")
     assert len(sub.y) == 2 and np.all(sub.persona == "P2")
+
+
+def test_robustez_solo_si_se_pide(tmp_path, monkeypatch):
+    # La sesión 2 (bloque B) comparte archivo con la 1: no puede colarse en el entrenamiento.
+    tel = tmp_path / "captura" / "P2"
+    tel.mkdir(parents=True)
+    lineas = [_muestra("hola", "P2"), _muestra("v", "P2", "B"), _muestra("l", "P2", "B")]
+    (tel / "lsa_samples_v2.jsonl").write_text("\n".join(json.dumps(m) for m in lineas) + "\n")
+    monkeypatch.setattr(ds, "WEBCAM", str(tmp_path / "no_existe.jsonl"))
+    monkeypatch.setattr(ds, "TELEFONO", str(tmp_path / "captura" / "*" / "lsa_samples_v2.jsonl"))
+    assert ds.cargar().bloque.tolist() == ["A"]
+    b = ds.cargar(bloques=("B",))
+    assert [b.clases[i] for i in b.y] == ["v", "l"]
+    assert b.sesion.tolist() == ["P2-B", "P2-B"] and b.condicion.tolist() == ["x", "x"]
 
 
 def test_sin_nada_respeta_words_json():
