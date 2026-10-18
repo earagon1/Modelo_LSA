@@ -45,12 +45,14 @@ class Dataset:
     bloque: np.ndarray               # W, A, N, B...
     condicion: np.ndarray            # "luz=...;angulo=...;distancia=..." de la planilla
     orden: np.ndarray                # orden de la toma en la planilla del participante
+    uuid: np.ndarray                 # id de la toma (lo pone la app): para deduplicar y fijar el test
     excluidas: dict = field(default_factory=dict)
 
     def subconjunto(self, mascara: np.ndarray) -> Dataset:
         return Dataset(self.X[mascara], self.y[mascara], self.clases, self.persona[mascara],
                        self.fuente[mascara], self.dispositivo[mascara], self.sesion[mascara],
-                       self.bloque[mascara], self.condicion[mascara], self.orden[mascara], self.excluidas)
+                       self.bloque[mascara], self.condicion[mascara], self.orden[mascara], self.uuid[mascara],
+                       self.excluidas)
 
     def resumen(self) -> str:
         from collections import Counter
@@ -83,20 +85,36 @@ def _grupo_sesion(m: dict) -> str:
 
 
 def cargar(incluir_nada: bool = True, fuentes: tuple[str, ...] = ("webcam", "telefono"),
-           bloques: tuple[str, ...] = BLOQUES_ENTRENAMIENTO) -> Dataset:
-    clases = clases_del_modelo(incluir_nada)
+           bloques: tuple[str, ...] = BLOQUES_ENTRENAMIENTO, aportadas: tuple[str, ...] = (),
+           clases: list[str] | None = None) -> Dataset:
+    """`aportadas`: archivos v2 que mandaron las apps al servidor del federado («Aportar
+    mis tomas»). Se graban fuera de la sesión guiada, así que no traen `sesion`: cada
+    persona es su `participant_id` y sus tomas, un grupo propio. Una toma que ya está
+    en otra fuente (mismo uuid) no se repite. `clases` permite sumar señas nuevas."""
+    clases = list(clases) if clases is not None else clases_del_modelo(incluir_nada)
     indice = {c: i for i, c in enumerate(clases)}
     rutas = []
     if "webcam" in fuentes and os.path.exists(WEBCAM):
         rutas.append(WEBCAM)
     if "telefono" in fuentes:
         rutas += sorted(glob.glob(TELEFONO))
+    rutas += [r for r in aportadas if os.path.exists(r)]
 
-    X, y, persona, fuente, dispositivo, sesion, bloque, condicion, orden = [], [], [], [], [], [], [], [], []
-    excluidas = {"prueba": 0, "fuera_de_sesion": 0, "clase_desconocida": 0, "pocos_frames": 0}
+    X, y, persona, fuente, dispositivo, sesion, bloque, condicion, orden, uuids = ([] for _ in range(10))
+    vistos: set[str] = set()
+    excluidas = {"prueba": 0, "fuera_de_sesion": 0, "clase_desconocida": 0, "pocos_frames": 0, "repetidas": 0}
     for ruta in rutas:
+        es_aporte = ruta in aportadas
         for m in dataset_v2.leer(ruta):
+            u = m.get("uuid")
+            if u and u in vistos:
+                excluidas["repetidas"] += 1
+                continue
             s = m.get("sesion")
+            if s is None and es_aporte:
+                pid = m.get("participant_id") or "anonimo"
+                s = {"codigo": pid, "orden": 0, "bloque": "A", "tanda": 0, "condicion": ""}
+                m = {**m, "sesion": s, "fuente": "aporte"}
             if s is None:
                 excluidas["fuera_de_sesion"] += 1
                 continue
@@ -114,15 +132,19 @@ def cargar(incluir_nada: bool = True, fuentes: tuple[str, ...] = ("webcam", "tel
             if seq is None:
                 excluidas["pocos_frames"] += 1
                 continue
+            if u:
+                vistos.add(u)
+            uuids.append(u or "")
             X.append(seq)
             y.append(indice[m["label"]])
             persona.append(s["codigo"])
             fuente.append(m.get("fuente", "telefono"))
             dispositivo.append(m["dispositivo"])
-            sesion.append(_grupo_sesion(m))
+            sesion.append(f"aporte-{s['codigo']}" if m.get("fuente") == "aporte" else _grupo_sesion(m))
             bloque.append(s["bloque"])
             condicion.append(s.get("condicion", ""))
             orden.append(int(s.get("orden", 0)))
     return Dataset(np.stack(X).astype(np.float32), np.asarray(y), clases, np.asarray(persona),
                    np.asarray(fuente), np.asarray(dispositivo), np.asarray(sesion), np.asarray(bloque),
-                   np.asarray(condicion), np.asarray(orden), {k: v for k, v in excluidas.items() if v})
+                   np.asarray(condicion), np.asarray(orden), np.asarray(uuids),
+                   {k: v for k, v in excluidas.items() if v})

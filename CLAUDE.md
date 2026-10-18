@@ -30,7 +30,12 @@ $PY verify_dataset_mix.py                   # conteos por fuente y por clase (so
 $PY federated/test_fedavg.py                # 9 tests de corrección del federado
 $PY federated/verificar_export.py <json>    # valida un export del teléfono (solo lee)
 $PY validacion_cruzada.py                   # 5-fold OOF (lento; escribe en resultados_validacion/)
+# Federado por red local (plan/federado_completo.md, contrato contract/federado_v1.json)
+$PY federated/reentrenar.py --dir federated/piloto   # reentrena con lo aportado y publica paquetes/v<N> (si pasa los controles)
+$PY federated/servidor.py --dir federated/piloto --quorum 2   # sirve rondas, tomas y paquetes; imprime la IP para la app
+$PY federated/cliente_emulado.py --servidor http://<ip>:8765 --persona P2 --rondas 3   # un "teléfono" con las tomas de P2
 ```
+- `federated/piloto*/` está en `.gitignore`: guarda tomas aportadas por personas. Respaldarlo en `D:` como los datos.
 
 ## Datos (gitignoreados, solo existen en esta máquina)
 - `frame_actions/<clase>/sample_<timestamp>/frame_NN.jpg`: 12 clases × 100 tomas, webcam, **una sola persona**.

@@ -1,0 +1,136 @@
+{
+ "protocolo": "federado-v1",
+ "descripcion": "Federado por red local de SeÑAR: rondas FedAvg de la cabeza y reparto del modelo completo (plan/federado_completo.md). HTTP/1.1 + JSON en la red local; sin internet.",
+ "numeros": {
+  "little_endian": true,
+  "pesos": "float32 en base64",
+  "delta": "int8 en base64 + escala float32 por tensor"
+ },
+ "cabeza": {
+  "entrada": 128,
+  "capas": [
+   64,
+   64,
+   "C"
+  ],
+  "activaciones": [
+   "relu",
+   "relu",
+   "softmax"
+  ],
+  "dropout_entrada": 0.5,
+  "l2": [
+   0.001,
+   0.001,
+   0.0
+  ],
+  "orden_tensores": [
+   "W1 (128x64)",
+   "b1",
+   "W2 (64x64)",
+   "b2",
+   "W3 (64xC)",
+   "b3"
+  ],
+  "W": "matriz [entrada][salida], como el kernel de Keras"
+ },
+ "sha256_pesos": "sha256 de los tensores en orden, cada uno como float32 little-endian, concatenados",
+ "cuantizacion": {
+  "bits": 8,
+  "niveles": 127,
+  "escala": "float32(max|x|) / 127 en float32; si max|x| = 0, escala 0 y todos los q en 0",
+  "redondeo": "s = float32(x / escala); q = floor(s) + (u < s - floor(s) ? 1 : 0); q = clamp(q, -127, 127)",
+  "uniformes": "u ~ U[0,1) float32, uno por valor; en el fixture vienen dados",
+  "descuantizar": "float32(q) * escala"
+ },
+ "endpoints": {
+  "GET /estado": {
+   "respuesta": [
+    "protocolo",
+    "ronda",
+    "version",
+    "paquete",
+    "muestras_aportadas",
+    "recibidos",
+    "quorum",
+    "timeout_s",
+    "segundos_restantes",
+    "accuracy_test"
+   ]
+  },
+  "GET /modelo": {
+   "respuesta": [
+    "protocolo",
+    "ronda",
+    "version",
+    "paquete",
+    "clases",
+    "arquitectura",
+    "backbone_sha256",
+    "pesos [{forma, datos}]",
+    "sha256"
+   ],
+   "nota": "la app solo participa si backbone_sha256 es el de su paquete instalado"
+  },
+  "POST /update": {
+   "cuerpo": [
+    "protocolo",
+    "ronda",
+    "participant_id",
+    "n_muestras (> 0)",
+    "bits (8)",
+    "tensores [{forma, escala, datos}]",
+    "metricas_locales (opcional)"
+   ],
+   "delta": "pesos locales - pesos de GET /modelo de esa ronda",
+   "codigos": {
+    "200": "aceptado, o duplicado (aceptado: false)",
+    "400": "inválido",
+    "409": "ronda vieja",
+    "413": "más de 1 MB"
+   }
+  },
+  "POST /muestras": {
+   "cuerpo": [
+    "protocolo",
+    "participant_id",
+    "muestras [senar-muestra-v2]"
+   ],
+   "reglas": "solo landmarks; uuid obligatorio; participant_id igual al que envía; etiquetas en minúsculas, sin tildes; hasta 32 MB",
+   "respuesta": [
+    "aceptadas",
+    "repetidas",
+    "rechazadas",
+    "total_aportadas"
+   ]
+  },
+  "GET /paquete": {
+   "respuesta": [
+    "protocolo",
+    "paquete",
+    "creado",
+    "clases",
+    "senas_nuevas",
+    "archivos [{nombre, sha256, bytes}]",
+    "backbone_sha256",
+    "cabeza_sha256",
+    "entrada",
+    "uuids_test",
+    "metricas",
+    "controles"
+   ]
+  },
+  "GET /paquete/v<N>/<archivo>": {
+   "respuesta": "los bytes del archivo; solo los listados en el manifiesto"
+  }
+ },
+ "reglas": {
+  "idempotencia": "un update por (participant_id, ronda); el segundo responde duplicado",
+  "cierre_de_ronda": "con el quórum, o al vencer el timeout con al menos un update",
+  "agregacion": "w_{r+1} = w_r + sum_k (n_k / n) * delta_k (FedAvg)",
+  "control_de_calidad": "la cabeza agregada se publica solo si no baja más de la tolerancia en el test fijo",
+  "paquete_nuevo": "las rondas pasan a la cabeza del paquete; los updates pendientes se descartan",
+  "uuids_test": "las tomas del test fijo no se usan para entrenar ni se aportan",
+  "app": "verifica cada sha256 antes de usar un archivo; conserva el modelo de fábrica para volver"
+ }
+}

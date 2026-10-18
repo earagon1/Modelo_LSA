@@ -24,3 +24,6 @@ runs/
 # El modelo original (el publicado hasta el 2026-10-16, en su versión sin Flex) es el
 # punto de partida de la tesis: validar.py lo evalúa sobre las tomas reales.
 !referencia/*.tflite
+
+# Directorio de trabajo del servidor federado: guarda tomas aportadas por personas
+federated/piloto*/
