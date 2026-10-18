@@ -7,7 +7,8 @@ el capítulo de resultados, siempre desde los JSON de las corridas, nunca a mano
   2. La fuga del esquema viejo, cuantificada contra la validación por persona.
   3. Accuracy por persona y F1 por seña: modelo original contra el nuevo (LOPO).
   4. La comparativa de la sesión de captura por dispositivo (resumen_captura.py).
-  5. El federado con personas reales y la calibración (sus corridas más recientes).
+  5. El federado con personas reales y la calibración (sus corridas más reciente).
+  6. La robustez por condición de la sesión 2 (robustez.py, su corrida más reciente).
 
 Uso, desde la raíz de modelo_LSA:
     python scripts/reporte_tesis.py resultados_validacion_v2/<corrida>
@@ -109,7 +110,9 @@ def main():
     for titulo, patron in (("6. Aprendizaje federado con personas reales",
                             os.path.join(RAIZ, "federated", "resultados_personas_*")),
                            ("7. Calibración y umbral de la app",
-                            os.path.join(RAIZ, "resultados_calibracion", "20*"))):
+                            os.path.join(RAIZ, "resultados_calibracion", "20*")),
+                           ("8. Robustez por condición (sesión 2)",
+                            os.path.join(RAIZ, "resultados_robustez", "20*"))):
         corridas = sorted(glob.glob(patron))
         resumen = os.path.join(corridas[-1], "resumen.md") if corridas else None
         if resumen and os.path.exists(resumen):

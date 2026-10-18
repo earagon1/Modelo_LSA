@@ -3,7 +3,10 @@
   "P3": {
     "condicion_real": [
       {
-        "ordenes": [107, 118],
+        "ordenes": [
+          107,
+          118
+        ],
         "planilla": "luz=interior;angulo=0;distancia=lejos",
         "real": "luz=sombra;angulo=0;distancia=lejos",
         "nota": "Se grabaron a 120 cm y además con la luz del techo apagada: dos factores adversos juntos. Se analizan como 'lejos + poca luz', no como 'lejos' solo."
@@ -11,11 +14,63 @@
     ],
     "descartadas": [
       {
-        "ordenes": [119, 130],
+        "ordenes": [
+          119,
+          130
+        ],
         "condicion": "luz=interior;angulo=30;distancia=media",
         "motivo": "Con el cuerpo girado 30° en el Galaxy A55 (6 FPS) el 52 % de los intentos se cortaba, la app detectaba manos que no estaban y quedaba esperando que se bajaran las manos aunque ya estaban abajo. Evelin juzgó mal hechas las 12 tomas: se borraron del teléfono (copia en D:/Respaldo-Tesis/2026-10-17/telefono_P3_A55_con_30grados/). La condición queda como 'no capturable de forma confiable en este dispositivo'.",
         "evidencia_metricas": "13 de los últimos 25 intentos abortados por pérdida de la mano (senar_metrics del teléfono de P3, 2026-10-17)"
       }
-    ]
+    ],
+    "revision_lejos": {
+      "fecha": "2026-10-17",
+      "conclusion": "Sin capturas falsas por manos en reposo: intervalos regulares entre tomas (6-12 s salvo las dos primeras), cada toma con la forma de mano de su seña (10 de 12 entre las 3 clases más parecidas de la sesión 1 de P3) y 'por favor' con dos manos. Se conservan las 12.",
+      "metodo": "forma de la mano dominante relativa a la muñeca, promediada en la toma, comparada con los centroides por clase del bloque A del mismo participante",
+      "a_mirar_en_el_analisis": {
+        "113 v (lejos+poca luz)": "más parecida a 'bien'; quieta como una V, probablemente dedos mal detectados con poca luz y lejos",
+        "cerca 149 gracias, 153 v": "lejos de su clase y con mucho más movimiento que en la sesión 1 (posible mano saliendo del cuadro a 40 cm)",
+        "sombra 140 adios": "lejos de su clase"
+      }
+    },
+    "intentos_cortados_aprox": {
+      "cerca": "8 %",
+      "poca luz": "41 %",
+      "girado 30°": "52 %",
+      "nota": "del seguimiento en vivo (plan/evidencia/2026-10-17_seguimiento_sesion2_P3.log); 30° de las métricas del teléfono antes de descartar esas tomas"
+    }
+  },
+  "P2": {
+    "descartadas": [
+      {
+        "ordenes": [
+          121
+        ],
+        "condicion": "luz=interior;angulo=30;distancia=media",
+        "clase": "por favor",
+        "motivo": "Guardada como 'por favor' pero con una sola mano en los 10 frames (la seña lleva dos) y el modelo dijo 'gracias' 0,99: lo más probable es que se haya grabado otra cosa. Se borró del teléfono (v1 y v2) al terminar la sesión; el crudo sin corregir está en D:/Respaldo-Tesis/2026-10-17/captura_E3_sesion2/P2/crudo_fin_sesion/. 'Por favor' a 30° queda como no capturable para P2 en el OnePlus: la segunda mano no se detecta de perfil."
+      }
+    ],
+    "capturas_falsas_quitadas_en_vivo": {
+      "condicion": "luz=interior;angulo=0;distancia=lejos",
+      "motivo": "Al empezar 'lejos', con las manos en reposo dentro del cuadro la app capturaba sola. Se quitaron esas muestras durante la sesión y se repitieron con las manos detrás de la espalda (las órdenes 107-118 que quedaron son las buenas)."
+    },
+    "deshechas_por_el_participante": "Dos tomas de 'poca luz' (adios 148 y gracias 152) se deshicieron y repitieron con el botón Deshacer; el v2 no tiene duplicados.",
+    "intentos_cortados_aprox": {
+      "lejos": "22 %",
+      "cerca": "15 %",
+      "poca luz": "35 %",
+      "nota": "del log de seguimiento (plan/evidencia/2026-10-17_seguimiento_sesion2_P2.log), atribuyendo cada intento a la condición que mostraba la pantalla; aproximado porque el texto de pantalla llega con algo de retraso",
+      "girado 30°": "69 %"
+    }
+  },
+  "P1": {
+    "intentos_cortados_aprox": {
+      "poca luz": "0 %",
+      "cerca": "0 %",
+      "girado 30°": "29 %",
+      "lejos": "14 %",
+      "nota": "de senar_metrics.jsonl de la tablet (los 55 eventos de la sesión 2, en orden: 48 capturas y 7 cortes), asignados a la condición por su posición en la planilla"
+    }
   }
 }
