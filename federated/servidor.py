@@ -172,7 +172,8 @@ class EstadoServidor:
             return {"protocolo": pr.PROTOCOLO, "ronda": self.ronda, "version": self.version,
                     "paquete": self.paquete, "muestras_aportadas": len(self.uuids_aportados),
                     "recibidos": len(self.pendientes), "quorum": self.quorum, "timeout_s": self.timeout_s,
-                    "segundos_restantes": max(0.0, self.timeout_s - (self.reloj() - self.inicio_ronda)),
+                    "segundos_restantes": (max(0.0, self.timeout_s - (self.reloj() - self._primer_update()))
+                                           if self.pendientes else None),
                     "accuracy_test": self.acc_actual}
 
     def evaluar(self, pesos) -> float | None:
@@ -203,10 +204,16 @@ class EstadoServidor:
             return 200, respuesta
 
     def revisar_timeout(self) -> dict | None:
+        """El plazo corre desde el primer update de la ronda, no desde que se abrió: una
+        ronda puede quedar abierta horas sin nadie, y el primero que llega no tiene que
+        cerrarla solo (pasó en el piloto del 2026-10-18)."""
         with self.lock:
-            if self.pendientes and self.reloj() - self.inicio_ronda >= self.timeout_s:
+            if self.pendientes and self.reloj() - self._primer_update() >= self.timeout_s:
                 return self._cerrar("timeout")
             return None
+
+    def _primer_update(self) -> float:
+        return min(p["t"] for p in self.pendientes.values())
 
     def _cerrar(self, motivo: str) -> dict:
         updates = [(p["delta"], p["n"]) for p in self.pendientes.values()]

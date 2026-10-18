@@ -106,6 +106,19 @@ def test_timeout_cierra_con_un_solo_cliente(tmp_path):
     assert est.revisar_timeout()["ronda_cerrada"] == 0 and est.ronda == 1
 
 
+def test_el_plazo_corre_desde_el_primer_update(tmp_path):
+    # Una ronda abierta horas sin nadie no la cierra el primero que llega.
+    reloj = Reloj()
+    p = _cabeza()
+    est = sv.EstadoServidor(p, list("abcd"), "sha", str(tmp_path), quorum=2, timeout_s=60, reloj=reloj)
+    reloj.t = 10_000
+    est.recibir(_update(p, 0, "p1_a")[0])
+    assert est.revisar_timeout() is None and est.ronda == 0
+    assert est.estado()["segundos_restantes"] == 60
+    reloj.t = 10_061
+    assert est.revisar_timeout()["ronda_cerrada"] == 0
+
+
 def test_el_control_de_calidad_no_publica_una_cabeza_peor(tmp_path):
     p = _cabeza(c=4)
     rng = np.random.default_rng(3)
