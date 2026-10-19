@@ -64,7 +64,10 @@ def resumir(P, y, D, epsilons, mascara):
         r = cs.sigma(P, D, e)
         en = r["en_I"] & mascara
         tamanos = (D < e).sum(axis=1)
-        media = lambda m: float(np.mean(r["sigmas_i"][m])) if m.any() else None  # noqa: E731
+        sigmas_i = r["sigmas_i"]
+
+        def media(m, sigmas_i=sigmas_i):
+            return float(np.mean(sigmas_i[m])) if m.any() else None
         out["por_epsilon"][str(p)] = {
             "sigma": media(en), "n_I": int(en.sum()),
             "vecinos_medio": float(np.mean(tamanos[en])) if en.any() else 0.0,
@@ -168,10 +171,12 @@ def escribir_resumen(res, salida):
           "σ va de 0 (vecinos con las mismas probabilidades) a 0,5 (vecinos que se reparten entre dos clases con "
           "certeza); más bajo es más consistente.", "",
           "## Modelo publicado en la app (temperatura incluida)", "",
-          "| Datos | Tomas | Acierto (%) | σ | Con vecinos | σ_i aciertos | σ_i errores |", "|---|---|---|---|---|---|---|"]
+          "| Datos | Tomas | Acierto (%) | σ | Con vecinos | σ_i aciertos | σ_i errores |",
+          "|---|---|---|---|---|---|---|"]
     for clave, v in res["app"].items():
         q = v["por_epsilon"][pr_]
-        md.append(f"| {'sesión 1' if clave == 'sesion1' else clave} | {v['n']} | {pct(v['accuracy'])} | {num(q['sigma'])} "
+        nombre = "sesión 1" if clave == "sesion1" else clave
+        md.append(f"| {nombre} | {v['n']} | {pct(v['accuracy'])} | {num(q['sigma'])} "
                   f"| {q['n_I']} | {num(q['sigma_i_aciertos'])} | {num(q['sigma_i_errores'])} |")
     md += ["", "La app ya vio la sesión 1 de estas personas: su σ ahí es optimista.", "",
            "## Persona no vista (cada persona con un modelo entrenado sin ella)", "",
