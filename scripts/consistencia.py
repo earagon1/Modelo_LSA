@@ -162,7 +162,8 @@ def escribir_resumen(res, salida):
           "Generado por `scripts/consistencia.py`. No editar a mano.", "",
           f"{res['n']} tomas del teléfono. σ_i = promedio sobre las clases de la desviación estándar sesgada de "
           "las probabilidades de los vecinos (N_i incluye a la muestra; los vecinos se buscan en todas las tomas, "
-          "de las dos sesiones); σ de un grupo = promedio de σ_i de sus tomas con al menos otro vecino. ε = percentil de las distancias entre pares de la sesión 1: "
+          "de las dos sesiones); σ de un grupo = promedio de σ_i de sus tomas con al menos otro vecino. "
+          "ε = percentil de las distancias entre pares de la sesión 1: "
           + ", ".join(f"p{k} = {num(v, 2)}" for k, v in e.items()) + f". Tabla principal con p{pr_}: el ε más "
           f"grande con al menos {pct(res['pureza_minima'])} % de vecinos de la misma seña (con ε más grande entran "
           "señas distintas y σ mide cuánto se mezclan las clases, no la estabilidad).", "",
