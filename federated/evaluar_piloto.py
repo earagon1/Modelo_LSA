@@ -56,6 +56,10 @@ def main():
         pesos, _ = pr.cabeza_desde_json({"clases": clases, "capas": d["capas"]})
         versiones.append((int(re.search(r"v(\d+)", os.path.basename(ruta)).group(1)), pesos))
     versiones.sort()
+    if not versiones:
+        # Antes de la primera ronda: la cabeza del paquete es el punto de partida.
+        with open(os.path.join(carpeta, "cabeza.json"), encoding="utf-8") as f:
+            versiones = [(0, pr.cabeza_desde_json(json.load(f))[0])]
 
     personas = sorted(set(b.persona.tolist()))
     print(f"Sesión 2 (nunca usada en el federado): {len(b.y)} tomas | test fijo del servidor: {len(z['etiquetas'])}")

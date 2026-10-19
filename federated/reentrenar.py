@@ -83,6 +83,8 @@ def main():
     ap.add_argument("--epocas", type=int, default=300)
     ap.add_argument("--tolerancia", type=float, default=0.01)
     ap.add_argument("--forzar", action="store_true", help="publicar aunque no supere el control de calidad")
+    ap.add_argument("--excluir-persona", nargs="*", default=[],
+                    help="personas que el paquete no ve (experimento: alguien nuevo que se suma por el federado)")
     args = ap.parse_args()
 
     import tensorflow as tf
@@ -125,9 +127,14 @@ def main():
     with open(ruta_test, encoding="utf-8") as f:
         test_uuids = set(json.load(f)["uuids"])
     es_test = np.isin(d.uuid, list(test_uuids))
-    print(f"entrenamiento {int((~es_test).sum())}, test fijo {int(es_test.sum())}", flush=True)
+    # Una persona excluida no entra al entrenamiento con ninguna toma (las suyas del test
+    # fijo siguen en el test): para el paquete es alguien que nunca vio.
+    excluida = np.isin(d.persona, args.excluir_persona)
+    entrena = ~es_test & ~excluida
+    print(f"entrenamiento {int(entrena.sum())}, test fijo {int(es_test.sum())}, "
+          f"excluidas {args.excluir_persona or 'ninguna'} ({int((excluida & ~es_test).sum())} tomas)", flush=True)
 
-    modelo = entrenar(d.X[~es_test], d.y[~es_test], len(clases), args.semilla, args.epocas)
+    modelo = entrenar(d.X[entrena], d.y[entrena], len(clases), args.semilla, args.epocas)
     backbone, densas = separar(modelo)
     tfl = convertir(backbone, 15, 126, "f32")
     flex = ops_flex(tfl)
@@ -182,10 +189,11 @@ def main():
                   "uuids_test": sorted(test_uuids),
                   "metricas": {"accuracy_test_fijo": acc_nueva, "accuracy_senas_previas": acc_nueva_comun,
                                "accuracy_paquete_anterior": acc_vig, "n_test": int(es_test.sum()),
-                               "n_entrenamiento": int((~es_test).sum()),
+                               "n_entrenamiento": int(entrena.sum()),
                                "tomas_aportadas": int((d.fuente == "aporte").sum()),
                                "paridad_backbone_dif_max": dif},
-                  "controles": controles, "datos": d.resumen(), "semilla": args.semilla}
+                  "controles": controles, "datos": d.resumen(), "semilla": args.semilla,
+                  "personas_excluidas": args.excluir_persona}
     if not all(controles.values()) and not args.forzar:
         destino = os.path.join(args.dir, "paquetes", f"rechazado_{n}_{datetime.now():%Y%m%d_%H%M%S}")
         with open(os.path.join(temporal, "rechazo.json"), "w", encoding="utf-8") as f:
