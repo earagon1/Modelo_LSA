@@ -42,6 +42,26 @@ especificacion = {
         "uniformes": "u ~ U[0,1) float32, uno por valor; en el fixture vienen dados",
         "descuantizar": "float32(q) * escala",
     },
+    "rotacion": {
+        "opcional": True,
+        "tipo": pr.ROTACION,
+        "cuando": "si el tensor trae 'rotacion': {tipo, semilla}, se rotó antes de cuantizar",
+        "rotar": "x completado con ceros hasta n = potencia de 2; y = H(D·x) / sqrt(n), H = Walsh-Hadamard sin "
+                 "normalizar, D = diag(signos(semilla, n))",
+        "desrotar": "x = D·H(y) / sqrt(n), truncado al largo original",
+        "signos": "splitmix64: estado_i = semilla + (i+1)·0x9E3779B97F4A7C15 (mod 2^64); z = estado_i; "
+                  "z = (z ^ z>>30)·0xBF58476D1CE4E5B9; z = (z ^ z>>27)·0x94D049BB133111EB; z ^= z>>31; "
+                  "signo = +1 si el bit 63 de z es 0, -1 si no",
+        "datos": "los n valores rotados cuantizados (n = potencia de 2 del largo del tensor)",
+        "semilla_por_tensor": "semilla base + índice del tensor",
+        "por_defecto": "apagada: con las actualizaciones de la cabeza no baja el error (no tienen picos; "
+                       "resultados_federado_limite_rotacion/)",
+    },
+    "limite_norma": {
+        "donde": "servidor, al recibir",
+        "regla": "si ||delta||_2 > limite, delta *= limite / ||delta||_2",
+        "valor": 2.0,
+    },
     "endpoints": {
         "GET /estado": {"respuesta": ["protocolo", "ronda", "version", "paquete", "muestras_aportadas", "recibidos",
                                       "quorum", "timeout_s", "segundos_restantes", "accuracy_test"]},
@@ -86,7 +106,13 @@ for nombre, x in [("normal", rng.normal(0, 0.02, 300)), ("con_ceros", np.r_[np.z
                   "q_base64": pr.a_b64(q, np.int8),
                   "reconstruido": pr.descuantizar(q, escala).ravel().tolist()})
 pesos = [rng.normal(0, 0.1, (4, 3)).astype(np.float32), rng.normal(0, 0.1, 3).astype(np.float32)]
-fixture = {"protocolo": pr.PROTOCOLO, "cuantizacion": casos,
+rotaciones = []
+for semilla, n in [(0, 13), (123456789, 64), (2 ** 40 + 7, 832)]:
+    x = rng.normal(0, 0.05, n).astype(np.float32)
+    signos = pr.signos(semilla, pr.potencia_de_2(n)).astype(int).tolist()
+    rotaciones.append({"semilla": semilla, "largo": n, "signos": signos,
+                       "x": x.tolist(), "rotado": pr.rotar(x, semilla).tolist(), "tolerancia": 1e-5})
+fixture = {"protocolo": pr.PROTOCOLO, "cuantizacion": casos, "rotacion": rotaciones,
            "sha_pesos": {"tensores": [{"forma": list(w.shape), "datos": w.ravel().tolist()} for w in pesos],
                          "base64": [pr.a_b64(w, np.float32) for w in pesos], "sha256": pr.sha_pesos(pesos)}}
 

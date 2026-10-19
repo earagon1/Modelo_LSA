@@ -39,6 +39,12 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import protocolo as pr
 
+# Límite a la norma L2 de cada update (propuesta, tabla de riesgos: "limitar la magnitud
+# de actualizaciones"). 3 veces la mediana de los updates honestos del piloto (0,68-0,76:
+# cabeza del paquete entrenada 2 épocas con las tomas de P1, P2 y P3), medido con
+# federated/medir_limite_y_rotacion.py. Ningún update honesto lo alcanza; uno malicioso
+# que invierte el aprendizaje (×10) pasa de bajar el test 10 puntos a bajarlo 3.
+LIMITE_NORMA = 2.0
 TAMANO_MAXIMO = 1 << 20  # 1 MB: un delta de la cabeza a 8 bits ocupa ~17 KB en base64
 TAMANO_MAXIMO_MUESTRAS = 32 << 20  # una sesión entera de 154 tomas v2 ocupa ~1,3 MB
 ESQUEMA_MUESTRA = "senar-muestra-v2"
@@ -102,7 +108,7 @@ class EstadoServidor:
     """Las rondas y los paquetes, sin HTTP. `reloj` se inyecta para testear el timeout."""
 
     def __init__(self, pesos, clases, backbone_sha, directorio, quorum=2, timeout_s=600.0,
-                 test=None, tolerancia=0.01, reloj=time.time, reanudar=None):
+                 test=None, tolerancia=0.01, reloj=time.time, reanudar=None, limite_norma=LIMITE_NORMA):
         self.pesos = [np.asarray(w, np.float32) for w in pesos]
         self.clases = list(clases)
         self.backbone_sha = backbone_sha
@@ -111,6 +117,7 @@ class EstadoServidor:
         self.timeout_s = timeout_s
         self.test = test  # (embeddings, etiquetas) o None
         self.tolerancia = tolerancia
+        self.limite_norma = limite_norma if limite_norma and limite_norma > 0 else None
         self.reloj = reloj
         self.arquitectura = _arquitectura(self.pesos)
         self.ronda = reanudar["ronda"] if reanudar else 0
@@ -194,11 +201,13 @@ class EstadoServidor:
             if pid in self.pendientes:
                 return 200, {"aceptado": False, "motivo": "duplicado: ya hay un update tuyo en esta ronda",
                              "ronda": self.ronda}
-            self.pendientes[pid] = {"delta": pr.decodificar_delta(u["tensores"]), "n": u["n_muestras"],
+            delta, norma, recortado = pr.recortar(pr.decodificar_delta(u["tensores"]), self.limite_norma)
+            self.pendientes[pid] = {"delta": delta, "n": u["n_muestras"], "norma": norma, "recortado": recortado,
+                                    "rotado": any("rotacion" in t for t in u["tensores"]),
                                     "bytes": pr.bytes_payload(u["tensores"]),
                                     "metricas": u.get("metricas_locales", {}), "t": self.reloj()}
             respuesta = {"aceptado": True, "ronda": self.ronda, "recibidos": len(self.pendientes),
-                         "quorum": self.quorum}
+                         "quorum": self.quorum, "recortado": recortado}
             if len(self.pendientes) >= self.quorum:
                 respuesta["cierre"] = self._cerrar("quorum")
             return 200, respuesta
@@ -224,6 +233,10 @@ class EstadoServidor:
                 "clientes": sorted(self.pendientes),
                 "n_muestras": {k: v["n"] for k, v in self.pendientes.items()},
                 "bytes_subidos": {k: v["bytes"] for k, v in self.pendientes.items()},
+                "normas": {k: round(v["norma"], 4) for k, v in self.pendientes.items()},
+                "recortados": sorted(k for k, v in self.pendientes.items() if v["recortado"]),
+                "rotados": sorted(k for k, v in self.pendientes.items() if v["rotado"]),
+                "limite_norma": self.limite_norma,
                 "metricas_locales": {k: v["metricas"] for k, v in self.pendientes.items()},
                 "duracion_s": self.reloj() - self.inicio_ronda,
                 "accuracy_antes": self.acc_actual, "accuracy_candidata": acc, "publicada": publicada}
@@ -423,6 +436,8 @@ def main():
     ap.add_argument("--quorum", type=int, default=2)
     ap.add_argument("--timeout", type=float, default=600.0)
     ap.add_argument("--tolerancia", type=float, default=0.01)
+    ap.add_argument("--limite-norma", type=float, default=LIMITE_NORMA,
+                    help="norma L2 máxima de un update (0 = sin límite)")
     ap.add_argument("--puerto", type=int, default=8765)
     args = ap.parse_args()
 
@@ -434,10 +449,10 @@ def main():
             z = np.load(args.test)
             test = (z["embeddings"], z["etiquetas"])
         estado = EstadoServidor(pesos, clases, args.backbone_sha, args.dir, args.quorum, args.timeout,
-                                test, args.tolerancia)
+                                test, args.tolerancia, limite_norma=args.limite_norma)
     else:
         estado = EstadoServidor.desde_paquetes(args.dir, quorum=args.quorum, timeout_s=args.timeout,
-                                               tolerancia=args.tolerancia)
+                                               tolerancia=args.tolerancia, limite_norma=args.limite_norma)
     servidor = crear_servidor(estado, puerto=args.puerto)
 
     def vigilar():

@@ -1,0 +1,104 @@
+{
+ "paquete": 1,
+ "clientes": [
+  {
+   "persona": "P1",
+   "muestras": 93,
+   "norma": 0.6948742563376119,
+   "error_sin_rotacion": 0.011449647805240815,
+   "error_con_rotacion": 0.01232411696708938,
+   "bytes_sin_rotacion": 13285,
+   "bytes_con_rotacion": 13528,
+   "bytes_float32": 53044,
+   "pico_max_sobre_rms_sin_rotacion": [
+    3.6342570781707764,
+    2.2393879890441895,
+    3.857487678527832,
+    2.621464252471924,
+    2.5399832725524902,
+    1.740330696105957
+   ],
+   "pico_max_sobre_rms_con_rotacion": [
+    3.9871039390563965,
+    2.7417240142822266,
+    4.200929641723633,
+    2.4196994304656982,
+    3.263453722000122,
+    1.7809789180755615
+   ]
+  },
+  {
+   "persona": "P2",
+   "muestras": 84,
+   "norma": 0.6841510445005853,
+   "error_sin_rotacion": 0.009368061521358977,
+   "error_con_rotacion": 0.012391313732547583,
+   "bytes_sin_rotacion": 13285,
+   "bytes_con_rotacion": 13528,
+   "bytes_float32": 53044,
+   "pico_max_sobre_rms_sin_rotacion": [
+    2.661207675933838,
+    2.551748275756836,
+    3.6717686653137207,
+    2.2803025245666504,
+    2.3511359691619873,
+    2.026400566101074
+   ],
+   "pico_max_sobre_rms_con_rotacion": [
+    3.6973419189453125,
+    2.440272092819214,
+    3.7844736576080322,
+    2.7421188354492188,
+    4.062521934509277,
+    2.539473295211792
+   ]
+  },
+  {
+   "persona": "P3",
+   "muestras": 89,
+   "norma": 0.7545041818583131,
+   "error_sin_rotacion": 0.009756409265215333,
+   "error_con_rotacion": 0.012404859817032078,
+   "bytes_sin_rotacion": 13285,
+   "bytes_con_rotacion": 13528,
+   "bytes_float32": 53044,
+   "pico_max_sobre_rms_sin_rotacion": [
+    3.025351047515869,
+    2.0560128688812256,
+    3.3977954387664795,
+    2.0072021484375,
+    2.3675928115844727,
+    1.6688481569290161
+   ],
+   "pico_max_sobre_rms_con_rotacion": [
+    3.711057424545288,
+    3.2901036739349365,
+    3.812028169631958,
+    2.569164514541626,
+    3.3090929985046387,
+    2.0355939865112305
+   ]
+  }
+ ],
+ "multiplo_limite": 3.0,
+ "limite": 2.0846227690128356,
+ "ataques": {
+  "evaluacion_tomas": 183,
+  "antes": 0.7868852459016393,
+  "solo_honestos": 0.8087431693989071,
+  "solo_honestos_con_limite": 0.8087431693989071,
+  "al_azar_x50": {
+   "sin_limite": 0.8032786885245902,
+   "con_limite": 0.8032786885245902,
+   "distancia_sin_limite": 8.339113216094484,
+   "distancia_con_limite": 0.5135933656019291
+  },
+  "invertido_x10": {
+   "sin_limite": 0.7103825136612022,
+   "con_limite": 0.7759562841530054,
+   "distancia_sin_limite": 1.287165810787766,
+   "distancia_con_limite": 0.6171649446327947
+  }
+ },
+ "repeticiones": 20
+}

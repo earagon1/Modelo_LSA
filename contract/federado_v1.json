@@ -43,6 +43,22 @@
   "uniformes": "u ~ U[0,1) float32, uno por valor; en el fixture vienen dados",
   "descuantizar": "float32(q) * escala"
  },
+ "rotacion": {
+  "opcional": true,
+  "tipo": "hadamard",
+  "cuando": "si el tensor trae 'rotacion': {tipo, semilla}, se rotó antes de cuantizar",
+  "rotar": "x completado con ceros hasta n = potencia de 2; y = H(D·x) / sqrt(n), H = Walsh-Hadamard sin normalizar, D = diag(signos(semilla, n))",
+  "desrotar": "x = D·H(y) / sqrt(n), truncado al largo original",
+  "signos": "splitmix64: estado_i = semilla + (i+1)·0x9E3779B97F4A7C15 (mod 2^64); z = estado_i; z = (z ^ z>>30)·0xBF58476D1CE4E5B9; z = (z ^ z>>27)·0x94D049BB133111EB; z ^= z>>31; signo = +1 si el bit 63 de z es 0, -1 si no",
+  "datos": "los n valores rotados cuantizados (n = potencia de 2 del largo del tensor)",
+  "semilla_por_tensor": "semilla base + índice del tensor",
+  "por_defecto": "apagada: con las actualizaciones de la cabeza no baja el error (no tienen picos; resultados_federado_limite_rotacion/)"
+ },
+ "limite_norma": {
+  "donde": "servidor, al recibir",
+  "regla": "si ||delta||_2 > limite, delta *= limite / ||delta||_2",
+  "valor": 2.0
+ },
  "endpoints": {
   "GET /estado": {
    "respuesta": [

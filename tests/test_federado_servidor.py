@@ -58,6 +58,52 @@ def test_agregar_es_fedavg_ponderado():
     assert np.allclose(nueva[0], 0.5)
 
 
+def test_rotacion_ida_y_vuelta_y_conserva_la_norma():
+    rng = np.random.default_rng(0)
+    for n in (1, 13, 64, 832, 8192):
+        x = rng.normal(0, 1, n).astype(np.float32)
+        y = pr.rotar(x, 99)
+        assert len(y) == pr.potencia_de_2(n)
+        assert abs(np.linalg.norm(y) - np.linalg.norm(x)) < 1e-3 * max(1.0, np.linalg.norm(x))
+        assert np.abs(pr.desrotar(y, 99, n) - x).max() < 1e-5
+    s = pr.signos(5, 20000)
+    assert set(np.unique(s)) == {-1.0, 1.0} and abs(s.mean()) < 0.03
+
+
+def test_delta_rotado_se_reconstruye_y_paga_el_relleno():
+    p = _cabeza(c=13)
+    rng = np.random.default_rng(1)
+    delta = [rng.normal(0, 0.01, w.shape).astype(np.float32) for w in p]
+    t = pr.codificar_delta(delta, rng, semilla=40)
+    rec = pr.decodificar_delta(json.loads(json.dumps(t)))
+    err = pr.norma([a - b for a, b in zip(delta, rec, strict=True)]) / pr.norma(delta)
+    assert err < 0.03
+    assert pr.validar_update({"protocolo": pr.PROTOCOLO, "ronda": 0, "participant_id": "p1_a", "n_muestras": 5,
+                              "bits": 8, "tensores": t}, 0, [list(w.shape) for w in p]) is None
+    # La capa de salida (64×13 = 832 valores) viaja completada a 1024.
+    assert pr.bytes_payload(t) - pr.bytes_payload(pr.codificar_delta(delta, rng)) == (1024 - 832) + (16 - 13) + 8 * 6
+
+
+def test_el_limite_recorta_solo_los_updates_grandes(tmp_path):
+    p = _cabeza()
+    rng = np.random.default_rng(2)
+    chico = [rng.normal(0, 1e-3, w.shape).astype(np.float32) for w in p]
+    d, n, rec = pr.recortar(chico, 2.0)
+    assert not rec and d is chico
+    grande = [x * np.float32(5000) for x in chico]
+    d, n, rec = pr.recortar(grande, 2.0)
+    assert rec and abs(pr.norma(d) - 2.0) < 1e-3 and n > 2.0
+    # En el servidor: el update malicioso entra recortado y queda registrado.
+    est = sv.EstadoServidor(p, list("abcd"), "sha", str(tmp_path), quorum=1, reloj=Reloj(), limite_norma=2.0)
+    u = {"protocolo": pr.PROTOCOLO, "ronda": 0, "participant_id": "p1_malo", "n_muestras": 10, "bits": 8,
+         "tensores": pr.codificar_delta(grande, rng)}
+    r = est.recibir(u)[1]
+    assert r["recortado"]
+    fila = json.loads((tmp_path / "rondas.jsonl").read_text(encoding="utf-8").splitlines()[-1])
+    assert fila["recortados"] == ["p1_malo"] and fila["normas"]["p1_malo"] > 2.0
+    assert pr.norma([a - b for a, b in zip(est.pesos, p, strict=True)]) <= 2.0 + 1e-3
+
+
 def test_validar_rechaza_lo_que_no_corresponde():
     p = _cabeza()
     formas = [list(w.shape) for w in p]

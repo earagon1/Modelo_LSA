@@ -7,6 +7,12 @@ en los dos lados:
     Kotlin y Python den lo mismo bit a bit, los uniformes del redondeo se inyectan
     (el fixture los trae fijos): los generadores de números al azar de los dos
     lenguajes no producen la misma secuencia;
+  - la rotación aleatoria antes de cuantizar (opcional, "actualizaciones esbozadas"
+    de Konečný et al., que cita la propuesta): x -> H·D·x / sqrt(n), con D signos al
+    azar de una semilla que viaja en el update y H la transformada de Walsh-Hadamard.
+    Reparte la energía del delta entre todos los valores, así un valor grande no fija
+    la escala de todo el tensor y el error de los 8 bits baja. El servidor la deshace;
+    no hace falta paridad bit a bit (los signos sí: salen del mismo splitmix64);
   - la agregación: w_{r+1} = w_r + sum_k (n_k / n) * delta_k, que es FedAvg
     (`fedavg.aggregate`) escrito sobre deltas. Va acá y no se importa de fedavg.py
     porque ese módulo carga TensorFlow, y el servidor no lo necesita.
@@ -23,6 +29,49 @@ import numpy as np
 PROTOCOLO = "federado-v1"
 BITS = 8
 NIVELES = 2 ** (BITS - 1) - 1  # simétrico: [-127, 127]
+ROTACION = "hadamard"
+_MASCARA = (1 << 64) - 1
+
+
+def potencia_de_2(n: int) -> int:
+    return 1 << max(0, (n - 1).bit_length())
+
+
+def signos(semilla: int, n: int) -> np.ndarray:
+    """n signos ±1 de splitmix64 (el mismo generador en Kotlin): el i-ésimo usa el estado
+    semilla + (i+1)·0x9E3779B97F4A7C15 y toma el bit más alto del resultado."""
+    with np.errstate(over="ignore"):
+        z = np.uint64(semilla & _MASCARA) + np.arange(1, n + 1, dtype=np.uint64) * np.uint64(0x9E3779B97F4A7C15)
+        z = (z ^ (z >> np.uint64(30))) * np.uint64(0xBF58476D1CE4E5B9)
+        z = (z ^ (z >> np.uint64(27))) * np.uint64(0x94D049BB133111EB)
+        z = z ^ (z >> np.uint64(31))
+    return np.where((z >> np.uint64(63)) == 0, 1.0, -1.0)
+
+
+def _hadamard(x: np.ndarray) -> np.ndarray:
+    """Transformada de Walsh-Hadamard rápida (sin normalizar); len(x) potencia de 2."""
+    y = np.array(x, dtype=np.float64)
+    h = 1
+    while h < len(y):
+        y = y.reshape(-1, 2, h)
+        y = np.stack([y[:, 0] + y[:, 1], y[:, 0] - y[:, 1]], axis=1).reshape(-1)
+        h *= 2
+    return y
+
+
+def rotar(x: np.ndarray, semilla: int) -> np.ndarray:
+    """H·D·x / sqrt(n), con x completado con ceros hasta n = potencia de 2. Es ortogonal:
+    conserva la norma, y [desrotar] la deshace."""
+    plano = np.asarray(x, np.float64).ravel()
+    n = potencia_de_2(plano.size)
+    relleno = np.zeros(n)
+    relleno[:plano.size] = plano
+    return (_hadamard(signos(semilla, n) * relleno) / np.sqrt(n)).astype(np.float32)
+
+
+def desrotar(y: np.ndarray, semilla: int, largo: int) -> np.ndarray:
+    n = len(y)
+    return (signos(semilla, n) * _hadamard(np.asarray(y, np.float64)) / np.sqrt(n))[:largo].astype(np.float32)
 
 
 def a_b64(x: np.ndarray, dtype) -> str:
@@ -75,21 +124,61 @@ def descuantizar(q: np.ndarray, escala: float) -> np.ndarray:
     return (q.astype(np.float32) * np.float32(escala)).astype(np.float32)
 
 
-def codificar_delta(delta: list[np.ndarray], rng: np.random.Generator) -> list[dict]:
+def codificar_delta(delta: list[np.ndarray], rng: np.random.Generator, semilla: int | None = None) -> list[dict]:
+    """Con [semilla], cada tensor i se rota con semilla + i antes de cuantizar."""
     salida = []
-    for d in delta:
-        q, escala = cuantizar(d, rng.random(d.shape, dtype=np.float32))
-        salida.append({"forma": list(d.shape), "escala": escala, "datos": a_b64(q, np.int8)})
+    for i, d in enumerate(delta):
+        t = {"forma": list(d.shape)}
+        x = d
+        if semilla is not None:
+            x = rotar(d, semilla + i)
+            t["rotacion"] = {"tipo": ROTACION, "semilla": semilla + i}
+        q, escala = cuantizar(x, rng.random(x.shape, dtype=np.float32))
+        t.update(escala=escala, datos=a_b64(q, np.int8))
+        salida.append(t)
     return salida
 
 
+def _largo_enviado(t: dict) -> int:
+    n = int(np.prod(t["forma"]))
+    return potencia_de_2(n) if t.get("rotacion") else n
+
+
 def decodificar_delta(tensores: list[dict]) -> list[np.ndarray]:
-    return [descuantizar(de_b64(t["datos"], np.int8, t["forma"]), t["escala"]) for t in tensores]
+    salida = []
+    for t in tensores:
+        n = int(np.prod(t["forma"]))
+        rot = t.get("rotacion")
+        if rot is None:
+            salida.append(descuantizar(de_b64(t["datos"], np.int8, t["forma"]), t["escala"]))
+            continue
+        if rot.get("tipo") != ROTACION:
+            raise ValueError(f"rotación {rot.get('tipo')!r} desconocida")
+        y = descuantizar(de_b64(t["datos"], np.int8, [potencia_de_2(n)]), t["escala"])
+        salida.append(desrotar(y, int(rot["semilla"]), n).reshape(t["forma"]))
+    return salida
 
 
 def bytes_payload(tensores: list[dict]) -> int:
-    """Bytes útiles del delta (sin base64 ni JSON): 1 por valor + 4 por escala."""
-    return sum(int(np.prod(t["forma"])) + 4 for t in tensores)
+    """Bytes útiles del delta (sin base64 ni JSON): 1 por valor enviado + 4 por escala
+    (+ 8 por la semilla si va rotado)."""
+    return sum(_largo_enviado(t) + 4 + (8 if t.get("rotacion") else 0) for t in tensores)
+
+
+def norma(delta: list[np.ndarray]) -> float:
+    return float(np.sqrt(sum(float(np.sum(np.asarray(d, np.float64) ** 2)) for d in delta)))
+
+
+def recortar(delta: list[np.ndarray], maxima: float | None) -> tuple[list[np.ndarray], float, bool]:
+    """Límite a la magnitud del update (tabla de riesgos de la propuesta: "limitar la
+    magnitud de actualizaciones"). Si la norma L2 del delta completo pasa [maxima], se lo
+    escala hasta [maxima]: la dirección se conserva, pero un cliente no puede mover la
+    cabeza más que eso en una ronda. Devuelve (delta, norma original, si se recortó)."""
+    n = norma(delta)
+    if maxima is None or n <= maxima or n == 0:
+        return delta, n, False
+    f = maxima / n
+    return [(np.asarray(d, np.float32) * np.float32(f)).astype(np.float32) for d in delta], n, True
 
 
 def validar_update(u: dict, ronda: int, formas: list[list[int]]) -> str | None:
