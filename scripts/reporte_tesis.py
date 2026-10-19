@@ -9,6 +9,7 @@ el capítulo de resultados, siempre desde los JSON de las corridas, nunca a mano
   4. La comparativa de la sesión de captura por dispositivo (resumen_captura.py).
   5. El federado con personas reales y la calibración (sus corridas más reciente).
   6. La robustez por condición de la sesión 2 (robustez.py, su corrida más reciente).
+  7. La métrica de consistencia σ de la propuesta (consistencia.py).
 
 Uso, desde la raíz de modelo_LSA:
     python scripts/reporte_tesis.py resultados_validacion_v2/<corrida>
@@ -112,7 +113,9 @@ def main():
                            ("7. Calibración y umbral de la app",
                             os.path.join(RAIZ, "resultados_calibracion", "20*")),
                            ("8. Robustez por condición (sesión 2)",
-                            os.path.join(RAIZ, "resultados_robustez", "20*"))):
+                            os.path.join(RAIZ, "resultados_robustez", "20*")),
+                           ("9. Consistencia estadística σ",
+                            os.path.join(RAIZ, "resultados_consistencia", "20*"))):
         corridas = sorted(glob.glob(patron))
         resumen = os.path.join(corridas[-1], "resumen.md") if corridas else None
         if resumen and os.path.exists(resumen):
