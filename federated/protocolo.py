@@ -32,6 +32,15 @@ NIVELES = 2 ** (BITS - 1) - 1  # simétrico: [-127, 127]
 ROTACION = "hadamard"
 _MASCARA = (1 << 64) - 1
 
+# Tope al peso de un cliente en FedAvg. n_muestras lo declara el cliente y es el peso del
+# promedio: sin tope, un update que diga 10⁶ muestras se queda con casi todo el promedio,
+# y el límite de norma no lo frena (acota cuánto se mueve el delta, no cuánto pesa). Lo
+# encontró la auditoría del 2026-11-09 (X5). La persona con más tomas del piloto (P1)
+# tiene unas 1200 (85 % de 1409); 2000 deja margen para una sesión más sin
+# castigar a nadie honesto. Pasarlo no es rechazo: el update entra con peso 2000 y queda
+# registrado (decisión D-R3, plan/federado_robustez.md), así no se pierde el aporte.
+N_MAX_MUESTRAS = 2000
+
 
 def potencia_de_2(n: int) -> int:
     return 1 << max(0, (n - 1).bit_length())
@@ -181,6 +190,13 @@ def recortar(delta: list[np.ndarray], maxima: float | None) -> tuple[list[np.nda
     return [(np.asarray(d, np.float32) * np.float32(f)).astype(np.float32) for d in delta], n, True
 
 
+def peso_efectivo(n: int, maximo: int | None = N_MAX_MUESTRAS) -> tuple[int, bool]:
+    """(peso con el que entra el update al promedio, si se recortó). maximo=None: sin tope."""
+    if maximo is None or n <= maximo:
+        return n, False
+    return maximo, True
+
+
 def validar_update(u: dict, ronda: int, formas: list[list[int]]) -> str | None:
     """Motivo de rechazo, o None si el update es aceptable para esta ronda."""
     if u.get("protocolo") != PROTOCOLO:
@@ -190,7 +206,8 @@ def validar_update(u: dict, ronda: int, formas: list[list[int]]) -> str | None:
     if not isinstance(u.get("participant_id"), str) or not u["participant_id"]:
         return "falta participant_id"
     n = u.get("n_muestras")
-    if not isinstance(n, int) or n <= 0:
+    # bool es subclase de int en Python: sin este chequeo, `true` pasaba como 1 muestra.
+    if isinstance(n, bool) or not isinstance(n, int) or n <= 0:
         return "n_muestras tiene que ser un entero positivo"
     if u.get("bits") != BITS:
         return f"bits {u.get('bits')}: el protocolo usa {BITS}"

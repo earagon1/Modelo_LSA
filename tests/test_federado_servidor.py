@@ -1,8 +1,10 @@
 """Protocolo y servidor del federado por red local (PY-F6, contrato federado-v1)."""
 import json
 import os
+import socket
 import sys
 import threading
+import time
 import urllib.error
 import urllib.request
 
@@ -115,6 +117,56 @@ def test_validar_rechaza_lo_que_no_corresponde():
     assert "bits" in pr.validar_update({**u, "bits": 4}, 0, formas)
 
 
+@pytest.mark.parametrize("n", [0, -3, True, False, 1.5, 10.0, "10", None, [10]])
+def test_n_muestras_tiene_que_ser_un_entero_positivo(n):
+    p = _cabeza()
+    u, _ = _update(p, 0, "p1_x")
+    assert "n_muestras" in pr.validar_update({**u, "n_muestras": n}, 0, [list(w.shape) for w in p])
+
+
+def test_peso_efectivo_recorta_solo_sobre_el_tope():
+    assert pr.peso_efectivo(1, 2000) == (1, False)
+    assert pr.peso_efectivo(2000, 2000) == (2000, False)
+    assert pr.peso_efectivo(2001, 2000) == (2000, True)
+    assert pr.peso_efectivo(10**6, 2000) == (2000, True)
+    assert pr.peso_efectivo(10**6, None) == (10**6, False)
+
+
+def test_n_inflado_no_domina_el_promedio(tmp_path):
+    """El ataque de la auditoría (X5): un cliente declara 10⁶ muestras para quedarse con
+    el promedio. Con el tope pesa lo mismo que un honesto con 2000; sin tope, todo."""
+    p = _cabeza()
+    honesto, _ = _update(p, 0, "p1_bueno", n=2000, semilla=1)
+    malo, _ = _update(p, 0, "p2_malo", n=10**6, semilla=2)
+
+    def ronda(directorio, max_muestras):
+        est = sv.EstadoServidor(p, list("abcd"), "sha", str(directorio), quorum=2, reloj=Reloj(),
+                                limite_norma=None, max_muestras=max_muestras)
+        est.recibir(honesto)
+        r = est.recibir(malo)[1]
+        fila = json.loads((directorio / "rondas.jsonl").read_text(encoding="utf-8").splitlines()[-1])
+        return est, r, fila
+
+    con_tope = tmp_path / "con"
+    con_tope.mkdir()
+    est, r, fila = ronda(con_tope, 2000)
+    assert r["n_muestras_usadas"] == 2000
+    assert fila["n_muestras"] == {"p1_bueno": 2000, "p2_malo": 2000}
+    assert fila["n_declarado_sobre_tope"] == {"p2_malo": 10**6} and fila["max_muestras"] == 2000
+    # Mitad y mitad: lo mismo que agregar los dos deltas decodificados con peso igual.
+    deltas = [pr.decodificar_delta(u["tensores"]) for u in (honesto, malo)]
+    esperado = pr.agregar(p, [(deltas[0], 1), (deltas[1], 1)])
+    assert all(np.allclose(a, b, atol=1e-6) for a, b in zip(est.pesos, esperado, strict=True))
+
+    sin_tope = tmp_path / "sin"
+    sin_tope.mkdir()
+    est, _, fila = ronda(sin_tope, 0)
+    assert fila["n_declarado_sobre_tope"] == {} and fila["max_muestras"] is None
+    # Sin tope el malo se queda con el 99,8 % del promedio.
+    movido = [a - b for a, b in zip(est.pesos, p, strict=True)]
+    assert pr.norma([m - d for m, d in zip(movido, deltas[1], strict=True)]) < 0.01 * pr.norma(deltas[1])
+
+
 class Reloj:
     def __init__(self):
         self.t = 0.0
@@ -195,6 +247,55 @@ def test_http_de_punta_a_punta(tmp_path):
         with pytest.raises(urllib.error.HTTPError) as e:
             urllib.request.urlopen(urllib.request.Request(base + "/update", b"{no json", {}))
         assert e.value.code == 400
+    finally:
+        srv.shutdown()
+
+
+def _crudo(puerto, pedido: bytes, espera=5.0) -> bytes:
+    """Manda bytes tal cual (urllib siempre pone un Content-Length correcto) y devuelve
+    lo que conteste el servidor hasta que cierre la conexión."""
+    with socket.create_connection(("127.0.0.1", puerto), timeout=espera) as s:
+        s.sendall(pedido)
+        recibido = b""
+        while True:
+            parte = s.recv(4096)
+            if not parte:
+                return recibido
+            recibido += parte
+
+
+def test_http_content_length_obligatorio_y_valido(tmp_path):
+    est = sv.EstadoServidor(_cabeza(), list("abcd"), "sha", str(tmp_path), quorum=1, reloj=Reloj())
+    srv = sv.crear_servidor(est, host="127.0.0.1", puerto=0)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    puerto = srv.server_address[1]
+    try:
+        sin = _crudo(puerto, b"POST /update HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n{}")
+        assert sin.startswith(b"HTTP/1.0 411") and b"falta Content-Length" in sin
+        for valor in (b"-1", b"abc"):
+            r = _crudo(puerto, b"POST /update HTTP/1.1\r\nHost: x\r\nConnection: close\r\nContent-Length: "
+                       + valor + b"\r\n\r\n{}")
+            assert r.startswith(b"HTTP/1.0 400"), (valor, r[:40])
+        grande = _crudo(puerto, b"POST /update HTTP/1.1\r\nHost: x\r\nConnection: close\r\nContent-Length: "
+                        + str(sv.TAMANO_MAXIMO + 1).encode() + b"\r\n\r\n")
+        assert grande.startswith(b"HTTP/1.0 413")
+    finally:
+        srv.shutdown()
+
+
+def test_http_una_conexion_que_no_manda_el_cuerpo_se_corta(tmp_path, monkeypatch):
+    """Anuncia 1000 bytes y manda 2: antes el hilo quedaba esperando para siempre."""
+    monkeypatch.setattr(sv, "TIMEOUT_CONEXION_S", 0.5)
+    est = sv.EstadoServidor(_cabeza(), list("abcd"), "sha", str(tmp_path), quorum=1, reloj=Reloj())
+    srv = sv.crear_servidor(est, host="127.0.0.1", puerto=0)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    puerto = srv.server_address[1]
+    try:
+        t0 = time.monotonic()
+        r = _crudo(puerto, b"POST /update HTTP/1.1\r\nHost: x\r\nContent-Length: 1000\r\n\r\n{}", espera=5.0)
+        assert r == b"" and time.monotonic() - t0 < 4.0  # cortó el servidor, no el timeout del test
+        # Y el servidor sigue atendiendo.
+        assert json.loads(urllib.request.urlopen(f"http://127.0.0.1:{puerto}/estado", timeout=5).read())["ronda"] == 0
     finally:
         srv.shutdown()
 
