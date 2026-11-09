@@ -124,9 +124,34 @@ Cada uno contesta algo distinto:
 | Escenario | Qué mide |
 |---|---|
 | **Centralizado** | Techo. Todos los datos juntos. Es lo que FedAvg intenta igualar sin moverlos |
-| **Solo local** | Piso. Un cliente aislado, sin colaborar. **Si FedAvg no le gana a esto, el enfoque no aporta nada** |
+| **Solo local (IID)** | Piso del FedAvg IID. Un cliente aislado, sin colaborar. **Si FedAvg no le gana a esto, el enfoque no aporta nada** |
+| **Solo local non-IID** | Piso del FedAvg non-IID: el promedio de los clientes de Dirichlet, cada uno entrenado solo |
 | **FedAvg IID** | Reparto uniforme. El caso amable |
 | **FedAvg non-IID** | Reparto Dirichlet: cada cliente con un subconjunto sesgado del vocabulario. El caso realista |
+
+**Cada FedAvg se compara con el piso de su mismo reparto.** Hasta el
+2026-11-09 había un solo piso, un cliente IID, y el FedAvg non-IID se comparaba
+contra él (auditoría, ML-A3). Eso mezclaba dos efectos, colaborar y tener datos
+sesgados, y daba "no se distingue del cliente aislado" (+1,9 puntos, p = 0,51).
+Con el piso correcto (`resultados_3clientes_2026-11-09/`: 3 clientes, alpha 0,5,
+5 réplicas, 960 tomas de entrenamiento) la lectura se invierte:
+
+| | Accuracy |
+|---|---|
+| Centralizado (techo) | 93,7 ± 2,7 % |
+| Solo local IID | 86,5 ± 1,9 % |
+| Solo local non-IID | 67,2 ± 2,3 % |
+| FedAvg IID | 93,3 ± 1,4 % |
+| FedAvg non-IID | 89,6 ± 1,9 % |
+
+- FedAvg non-IID le gana a su piso por **22,4 puntos** (p < 0,001). Un cliente
+  con un vocabulario sesgado es justo el que más gana colaborando.
+- FedAvg IID le gana al suyo por 6,8 puntos (p < 0,001) y no se distingue del techo.
+- La heterogeneidad cuesta 3,7 puntos (IID contra non-IID, p = 0,015), y el
+  non-IID queda 4,1 puntos por debajo del techo (p = 0,035).
+
+`resultados_3clientes/` es la corrida vieja, con 736 tomas y sin piso non-IID.
+Las cifras no se comparan entre corridas, porque el dataset cambió.
 
 Dos condiciones que hacen que la tabla signifique algo:
 
