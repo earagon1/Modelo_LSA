@@ -37,6 +37,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import agregacion as ag
 import protocolo as pr
 
 # Límite a la norma L2 de cada update (propuesta, tabla de riesgos: "limitar la magnitud
@@ -114,7 +115,12 @@ class EstadoServidor:
 
     def __init__(self, pesos, clases, backbone_sha, directorio, quorum=2, timeout_s=600.0,
                  test=None, tolerancia=0.01, reloj=time.time, reanudar=None, limite_norma=LIMITE_NORMA,
-                 max_muestras=pr.N_MAX_MUESTRAS):
+                 max_muestras=pr.N_MAX_MUESTRAS, agregacion="fedavg", beta=ag.BETA_POR_DEFECTO):
+        if agregacion not in ag.ESTRATEGIAS:
+            raise ValueError(f"agregación {agregacion!r}: las opciones son {', '.join(ag.ESTRATEGIAS)}")
+        ag.descartados_por_lado(1, beta)  # valida beta al arrancar, no en la primera ronda
+        self.agregacion = agregacion
+        self.beta = beta
         self.pesos = [np.asarray(w, np.float32) for w in pesos]
         self.clases = list(clases)
         self.backbone_sha = backbone_sha
@@ -188,7 +194,7 @@ class EstadoServidor:
                     "recibidos": len(self.pendientes), "quorum": self.quorum, "timeout_s": self.timeout_s,
                     "segundos_restantes": (max(0.0, self.timeout_s - (self.reloj() - self._primer_update()))
                                            if self.pendientes else None),
-                    "accuracy_test": self.acc_actual}
+                    "accuracy_test": self.acc_actual, "agregacion": self.agregacion}
 
     def evaluar(self, pesos) -> float | None:
         if self.test is None:
@@ -235,7 +241,7 @@ class EstadoServidor:
 
     def _cerrar(self, motivo: str) -> dict:
         updates = [(p["delta"], p["n"]) for p in self.pendientes.values()]
-        candidata = pr.agregar(self.pesos, updates)
+        candidata = pr.agregar(self.pesos, updates, self.agregacion, self.beta)
         acc = self.evaluar(candidata)
         publicada = acc is None or self.acc_actual is None or acc >= self.acc_actual - self.tolerancia
         fila = {"evento": "ronda", "ronda": self.ronda, "paquete": self.paquete, "motivo": motivo,
@@ -251,6 +257,12 @@ class EstadoServidor:
                 "recortados": sorted(k for k, v in self.pendientes.items() if v["recortado"]),
                 "rotados": sorted(k for k, v in self.pendientes.items() if v["rotado"]),
                 "limite_norma": self.limite_norma,
+                "agregacion": self.agregacion,
+                "beta": self.beta if self.agregacion == "recortada" else None,
+                # Una ronda que cierra por tiempo puede tener menos clientes que el quórum:
+                # queda escrito si la estrategia robusta no defendió nada en esa ronda.
+                "advertencia_agregacion": (ag.advertencia(self.agregacion, len(updates), self.beta)
+                                           if self.agregacion != "fedavg" else None),
                 "metricas_locales": {k: v["metricas"] for k, v in self.pendientes.items()},
                 "duracion_s": self.reloj() - self.inicio_ronda,
                 "accuracy_antes": self.acc_actual, "accuracy_candidata": acc, "publicada": publicada}
@@ -471,9 +483,15 @@ def main():
                     help="norma L2 máxima de un update (0 = sin límite)")
     ap.add_argument("--max-muestras", type=int, default=pr.N_MAX_MUESTRAS,
                     help="peso máximo de un cliente en FedAvg; más que eso entra recortado (0 = sin tope)")
+    ap.add_argument("--agregacion", choices=ag.ESTRATEGIAS, default="fedavg",
+                    help="fedavg (ponderado por n), mediana o recortada (robustas, sin usar n)")
+    ap.add_argument("--beta", type=float, default=ag.BETA_POR_DEFECTO,
+                    help="fracción que la media recortada descarta de cada punta, en [0; 0,5)")
     ap.add_argument("--puerto", type=int, default=8765)
     args = ap.parse_args()
 
+    opciones = {"limite_norma": args.limite_norma, "max_muestras": args.max_muestras,
+                "agregacion": args.agregacion, "beta": args.beta}
     if args.cabeza:
         with open(args.cabeza, encoding="utf-8") as f:
             pesos, clases = pr.cabeza_desde_json(json.load(f))
@@ -482,12 +500,14 @@ def main():
             z = np.load(args.test)
             test = (z["embeddings"], z["etiquetas"])
         estado = EstadoServidor(pesos, clases, args.backbone_sha, args.dir, args.quorum, args.timeout,
-                                test, args.tolerancia, limite_norma=args.limite_norma,
-                                max_muestras=args.max_muestras)
+                                test, args.tolerancia, **opciones)
     else:
         estado = EstadoServidor.desde_paquetes(args.dir, quorum=args.quorum, timeout_s=args.timeout,
-                                               tolerancia=args.tolerancia, limite_norma=args.limite_norma,
-                                               max_muestras=args.max_muestras)
+                                               tolerancia=args.tolerancia, **opciones)
+    if args.agregacion != "fedavg":
+        aviso = ag.advertencia(args.agregacion, args.quorum, args.beta)
+        if aviso:
+            print(f"ATENCIÓN: {aviso}.", flush=True)
     servidor = crear_servidor(estado, puerto=args.puerto)
 
     def vigilar():
