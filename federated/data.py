@@ -320,6 +320,48 @@ def partition_by_client(client_ids, seed: int = 42) -> list[np.ndarray]:
     return [np.where(client_ids == cid)[0] for cid in sorted(set(client_ids.tolist()))]
 
 
+def partition_subclientes(client_ids, y, sub_clientes: int, seed: int = 42) -> tuple[list[np.ndarray], list[str]]:
+    """
+    Cada persona partida en `sub_clientes` clientes, sin mezclar personas.
+
+    Con tres personas no hay forma de probar las defensas que necesitan muchos
+    clientes (Krum pide 2f + 3, la privacidad diferencial divide el ruido por k).
+    Partir a cada persona simula "varios teléfonos de la misma persona", o varias
+    personas parecidas: la heterogeneidad sigue siendo la real (entre personas),
+    y no la sintética de Dirichlet.
+
+    Dentro de cada persona el reparto se estratifica por clase: las tomas de cada
+    seña se barajan y se reparten en ronda, empezando en un sub-cliente al azar.
+    Así cada sub-cliente tiene casi todo el vocabulario de esa persona, como lo
+    tendría su teléfono. Los tamaños difieren a lo sumo en una toma por clase.
+
+    Devuelve (particiones, nombre de cada sub-cliente, "P2#3"). Con
+    sub_clientes = 1 es exactamente `partition_by_client`.
+    """
+    if isinstance(sub_clientes, bool) or not isinstance(sub_clientes, int) or sub_clientes < 1:
+        raise ValueError(f"sub_clientes tiene que ser un entero >= 1: vino {sub_clientes!r}")
+    client_ids, y = np.asarray(client_ids), np.asarray(y)
+    if len(client_ids) != len(y):
+        raise ValueError("client_ids e y tienen largos distintos")
+    rng = np.random.default_rng(seed)
+    partes, nombres = [], []
+    for cid in sorted(set(client_ids.tolist())):
+        trozos = [[] for _ in range(sub_clientes)]
+        de_la_persona = np.where(client_ids == cid)[0]
+        for c in np.unique(y[de_la_persona]):
+            idx = de_la_persona[y[de_la_persona] == c]
+            idx = idx[rng.permutation(len(idx))]
+            inicio = int(rng.integers(sub_clientes))
+            for j, i in enumerate(idx):
+                trozos[(inicio + j) % sub_clientes].append(int(i))
+        for s, t in enumerate(trozos):
+            if not t:
+                raise ValueError(f"{cid} tiene menos tomas que sub-clientes ({sub_clientes}): el #{s} queda vacío")
+            partes.append(np.sort(np.asarray(t, dtype=np.int64)))
+            nombres.append(f"{cid}#{s}" if sub_clientes > 1 else str(cid))
+    return partes, nombres
+
+
 def reporte_particion(partes: list[np.ndarray], y, etiquetas: list[str]) -> str:
     """Tabla de cuantas muestras de cada clase le toco a cada cliente."""
     lineas = []

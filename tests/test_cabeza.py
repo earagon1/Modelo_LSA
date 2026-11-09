@@ -56,3 +56,36 @@ def test_con_8_bits_se_sube_menos(datos):
     m = cabeza.construir(base, 15, 126, 5)
     _, h8 = cabeza.fedavg(m, clientes, clientes[0][0], clientes[0][1], rondas=1, epocas_locales=1, bits=8)
     assert h8["bytes_subida"][-1] < h32["bytes_subida"][-1] / 3
+
+
+def test_agregacion_robusta_sobre_la_cabeza(datos, monkeypatch):
+    """El cableado de `agregacion` en cabeza.fedavg: cada cliente devuelve global + un
+    delta fijo (se reemplaza el entrenamiento), así el resultado se calcula a mano."""
+    base, clientes = datos
+    m = cabeza.construir(base, 15, 126, 5)
+    g0 = cabeza.cabeza(m)
+    escalas = [0.01, 0.02, 5.0]  # el tercero es el atípico
+    tres = [clientes[0], clientes[1], (clientes[0][0][:5], clientes[0][1][:5])]
+    llamadas = []
+
+    def falso(modelo, pesos_cabeza, X, y1h, epocas, batch_size=8):
+        k = len(llamadas) % 3
+        llamadas.append(k)
+        return [w + np.float32(escalas[k]) for w in pesos_cabeza]
+
+    monkeypatch.setattr(cabeza, "entrenar_local", falso)
+    final, _ = cabeza.fedavg(m, tres, clientes[0][0], clientes[0][1], rondas=1, agregacion="mediana")
+    for a, b in zip(final, g0, strict=True):
+        np.testing.assert_allclose(a, b + 0.02, atol=1e-6)
+    # FedAvg pondera por n (20, 20, 5 de 45): (20·0,01 + 20·0,02 + 5·5) / 45.
+    m = cabeza.construir(base, 15, 126, 5)
+    final, _ = cabeza.fedavg(m, tres, clientes[0][0], clientes[0][1], rondas=1)
+    for a, b in zip(final, g0, strict=True):
+        np.testing.assert_allclose(a, b + (20 * 0.01 + 20 * 0.02 + 5 * 5.0) / 45, atol=1e-5)
+    # Con 8 bits la mediana se calcula sobre los deltas cuantizados: queda cerca de 0,02.
+    m = cabeza.construir(base, 15, 126, 5)
+    final, _ = cabeza.fedavg(m, tres, clientes[0][0], clientes[0][1], rondas=1, bits=8, agregacion="mediana")
+    for a, b in zip(final, g0, strict=True):
+        np.testing.assert_allclose(a, b + 0.02, atol=1e-3)
+    with pytest.raises(ValueError, match="agregación"):
+        cabeza.fedavg(m, tres, clientes[0][0], clientes[0][1], rondas=1, agregacion="bulyan")

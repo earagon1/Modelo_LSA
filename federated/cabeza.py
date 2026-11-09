@@ -22,6 +22,7 @@ import os
 
 import numpy as np
 import tensorflow as tf
+from agregacion import ESTRATEGIAS, combinar
 from compresion import comprimir_update, error_relativo
 from fedavg import aggregate, reset_optimizer_state
 
@@ -68,14 +69,20 @@ def entrenar_local(modelo, pesos_cabeza, X, y1h, epocas, batch_size=8):
 
 
 def fedavg(modelo, clientes, X_test, y_test1h, rondas=40, epocas_locales=2, batch_size=8,
-           bits=None, semilla=0):
+           bits=None, semilla=0, agregacion="fedavg", **parametros_agregacion):
     """
     FedAvg sobre la cabeza. `clientes` es una lista de (X, y_onehot), una por persona.
     Con `bits`, cada cliente sube su delta cuantizado (compresion.py) y se cuentan
     los bytes reales de esa subida.
 
+    `agregacion` = "mediana", "recortada" o "krum" cambia el promedio ponderado por la
+    combinación robusta de los deltas (`agregacion.py`, la misma que usa el servidor;
+    `parametros_agregacion` son beta, f y m). Con "fedavg" el camino es el de siempre.
+
     Devuelve la cabeza final y la historia por ronda (accuracy en el test, bytes).
     """
+    if agregacion not in ESTRATEGIAS:
+        raise ValueError(f"agregación {agregacion!r}: las opciones son {', '.join(ESTRATEGIAS)}")
     rng_q = np.random.default_rng(semilla + 9973)
     global_ = cabeza(modelo)
     bytes_cabeza = int(sum(w.size for w in global_) * 4)
@@ -94,8 +101,17 @@ def fedavg(modelo, clientes, X_test, y_test1h, rondas=40, epocas_locales=2, batc
                 updates.append((rec, len(X)))
                 subida += n_bytes
                 errores.append(error_relativo(delta, rec))
-        promedio = aggregate(updates)
-        global_ = promedio if bits is None else [g + d for g, d in zip(global_, promedio, strict=True)]
+        if agregacion == "fedavg":
+            promedio = aggregate(updates)
+            global_ = promedio if bits is None else [g + d for g, d in zip(global_, promedio, strict=True)]
+        else:
+            # Sin bits, los updates son cabezas: se pasan a deltas para que la combinación
+            # robusta vea lo mismo que en el servidor (para la mediana y Krum da igual,
+            # pero así hay un solo camino).
+            deltas = updates if bits is not None else [
+                ([a - b for a, b in zip(local, global_, strict=True)], n) for local, n in updates]
+            combinado = combinar(deltas, agregacion, **parametros_agregacion)
+            global_ = [(g + c).astype(np.float32) for g, c in zip(global_, combinado, strict=True)]
         poner_cabeza(modelo, global_)
         _, acc = modelo.evaluate(X_test, y_test1h, verbose=0)
         historia["ronda"].append(ronda)

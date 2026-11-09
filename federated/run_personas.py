@@ -44,7 +44,9 @@ sys.path.insert(0, AQUI)
 sys.path.insert(1, RAIZ)
 sys.path.insert(2, os.path.join(RAIZ, "scripts"))
 
+import agregacion as ag  # noqa: E402
 import cabeza  # noqa: E402
+from data import partition_subclientes  # noqa: E402
 
 
 def a1h(y, c):
@@ -77,7 +79,19 @@ def main():
     ap.add_argument("--epocas-personalizacion", type=int, default=10)
     ap.add_argument("--lr", type=float, default=1e-3)
     ap.add_argument("--etiqueta", default="personas")
+    ap.add_argument("--sub-clientes", type=int, default=1,
+                    help="parte a cada persona en S clientes (data.partition_subclientes); 1 = una por persona")
+    ap.add_argument("--agregacion", choices=ag.ESTRATEGIAS, default="fedavg")
+    ap.add_argument("--beta", type=float, default=ag.BETA_POR_DEFECTO)
+    ap.add_argument("--krum-f", type=int, default=ag.F_POR_DEFECTO)
+    ap.add_argument("--krum-m", type=int, default=ag.M_POR_DEFECTO)
     args = ap.parse_args()
+    parametros = {"beta": args.beta, "f": args.krum_f, "m": args.krum_m}
+    if args.agregacion == "krum":
+        # En A federan las otras dos personas, así que hay 2·S clientes (en C, 3·S).
+        motivo = ag.validar_krum(2 * args.sub_clientes, args.krum_f, args.krum_m)
+        if motivo:
+            raise SystemExit(f"{motivo} en el experimento A: subí --sub-clientes")
 
     import tensorflow as tf
     from scipy.stats import ttest_rel
@@ -107,25 +121,35 @@ def main():
         def datos(mascara):
             return d.X[mascara], a1h(d.y[mascara], C)
 
+        def clientes_de(mascara):
+            """Los clientes del federado sobre esas tomas: uno por persona, o S por persona."""
+            idx = np.where(mascara)[0]
+            partes, _ = partition_subclientes(d.persona[idx], d.y[idx], args.sub_clientes, seed=semilla)
+            return [(d.X[idx[q]], a1h(d.y[idx[q]], C)) for q in partes]
+
         for p in personas:
             Xp, yp = datos(tel & (d.persona == p))
             otros = [q for q in personas if q != p]
-            clientes = [datos(tel & (d.persona == q)) for q in otros]
+            # El piso es siempre "una persona sola", aunque el federado parta a cada una.
+            por_persona = [datos(tel & (d.persona == q)) for q in otros]
+            clientes = clientes_de(tel & np.isin(d.persona, otros))
 
             m = cabeza.construir(base, d.X.shape[1], d.X.shape[2], C, args.lr)
-            fila = {"semilla": semilla, "persona": p, "base": acc(m, Xp, yp)}
-            final, hist = cabeza.fedavg(m, clientes, Xp, yp, args.rondas, args.epocas_locales, semilla=semilla)
+            fila = {"semilla": semilla, "persona": p, "base": acc(m, Xp, yp), "clientes": len(clientes)}
+            final, hist = cabeza.fedavg(m, clientes, Xp, yp, args.rondas, args.epocas_locales, semilla=semilla,
+                                        agregacion=args.agregacion, **parametros)
             fila["fedavg"] = hist["accuracy"][-1]
             fila["bytes_fedavg"] = hist["bytes_subida"][-1]
             m8 = cabeza.construir(base, d.X.shape[1], d.X.shape[2], C, args.lr)
-            _, hist8 = cabeza.fedavg(m8, clientes, Xp, yp, args.rondas, args.epocas_locales, bits=8, semilla=semilla)
+            _, hist8 = cabeza.fedavg(m8, clientes, Xp, yp, args.rondas, args.epocas_locales, bits=8, semilla=semilla,
+                                     agregacion=args.agregacion, **parametros)
             fila["fedavg_8b"] = hist8["accuracy"][-1]
             fila["bytes_fedavg_8b"] = hist8["bytes_subida"][-1]
-            Xu = np.concatenate([x for x, _ in clientes])
-            yu = np.concatenate([y for _, y in clientes])
+            Xu = np.concatenate([x for x, _ in por_persona])
+            yu = np.concatenate([y for _, y in por_persona])
             fila["techo"] = acc(entrenar_cabeza(base, Xu, yu, total_ep, d, C, args.lr), Xp, yp)
             fila["piso"] = float(np.mean([acc(entrenar_cabeza(base, x, y, total_ep, d, C, args.lr), Xp, yp)
-                                          for x, y in clientes]))
+                                          for x, y in por_persona]))
             fila["rondas_95_techo"] = rondas_hasta(hist, 0.95 * fila["techo"])
             fila["n_parametros_cabeza"] = cabeza.n_parametros_cabeza(m)
             filas_a.append(fila)
@@ -149,8 +173,9 @@ def main():
         clientes_t1 = [datos(tel & (d.sesion == f"{q}-A1")) for q in personas]
         X2_todos, y2_todos = datos(tel & np.isin(d.sesion, [f"{q}-A2" for q in personas]))
         mc = cabeza.construir(base, d.X.shape[1], d.X.shape[2], C, args.lr)
-        global_c, _ = cabeza.fedavg(mc, clientes_t1, X2_todos, y2_todos, args.rondas, args.epocas_locales,
-                                    semilla=semilla)
+        federan_c = clientes_de(tel & np.isin(d.sesion, [f"{q}-A1" for q in personas]))
+        global_c, _ = cabeza.fedavg(mc, federan_c, X2_todos, y2_todos, args.rondas, args.epocas_locales,
+                                    semilla=semilla, agregacion=args.agregacion, **parametros)
         for q, (X1, y1) in zip(personas, clientes_t1, strict=True):
             X2, y2 = datos(tel & (d.sesion == f"{q}-A2"))
             cabeza.poner_cabeza(mc, global_c)
@@ -199,10 +224,14 @@ def escribir_md(salida, r, args):
     lo = r["lopo"]
     md = ["# Aprendizaje federado con personas reales", "",
           f"Rondas {args.rondas}, épocas locales {args.epocas_locales}, semillas {args.semillas}. "
-          f"Se entrena y se sube solo la cabeza; el backbone sale de la webcam de P1 y está congelado.", "",
+          f"Se entrena y se sube solo la cabeza; el backbone sale de la webcam de P1 y está congelado. "
+          f"Agregación: {args.agregacion}; {args.sub_clientes} cliente(s) por persona.", "",
           "## A. Federado con una persona afuera", "", "| | Accuracy (%) |", "|---|---|"]
+    federan = f"{2 * args.sub_clientes} clientes" if args.sub_clientes > 1 else "2 personas"
     for k, nombre in (("base", "Modelo del servidor, sin federar"), ("piso", "Piso: una sola persona"),
-                      ("fedavg", "FedAvg (2 personas)"), ("fedavg_8b", "FedAvg con subida a 8 bits"),
+                      (("fedavg", f"FedAvg ({federan})") if args.agregacion == "fedavg"
+                       else ("fedavg", f"{args.agregacion} ({federan})")),
+                      ("fedavg_8b", "Lo mismo, con subida a 8 bits"),
                       ("techo", "Techo: centralizado")):
         md.append(f"| {nombre} | {pct(lo[k]['media'])} ± {pct(lo[k]['desvio'])} |")
     md += ["", f"Subida total de los clientes en toda la corrida: {lo['bytes_fedavg'] / 1e6:.2f} MB en float32, "

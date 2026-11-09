@@ -9,7 +9,10 @@ preguntas distintas y solo juntas dicen algo:
 
   Solo local     Piso. Un cliente entrena unicamente con lo suyo, sin
                  colaborar. Es la comparacion que importa: si FedAvg no le
-                 gana a esto, el enfoque federado no aporta nada.
+                 gana a esto, el enfoque federado no aporta nada. Hay dos:
+                 un cliente IID (piso del FedAvg IID) y el promedio de los
+                 clientes non-IID, cada uno solo (piso del FedAvg non-IID).
+                 Cada FedAvg se compara con el piso de su mismo reparto.
 
   FedAvg IID     Reparto uniforme. El caso amable.
 
@@ -74,7 +77,13 @@ from model import build_model, contar_parametros  # noqa: E402
 SALIDA = Path(__file__).resolve().parent / "resultados"
 
 CENTRALIZADO = "Centralizado (techo)"
-SOLO_LOCAL = "Solo local (piso)"
+SOLO_LOCAL = "Solo local (piso)"  # un cliente de la partición IID; el nombre queda por --reanalizar
+# El piso del non-IID tiene que ser un cliente non-IID (auditoría 2026-11-09, ML-A3):
+# comparar FedAvg non-IID contra un cliente IID mezclaba dos efectos, colaborar y
+# tener datos sesgados. Es el promedio de los k clientes de la partición Dirichlet,
+# cada uno entrenado solo: con Dirichlet los clientes difieren mucho en tamaño y en
+# qué clases tienen, y elegir uno sería arbitrario.
+SOLO_LOCAL_NIID = "Solo local non-IID (piso)"
 
 
 def parse_args():
@@ -208,6 +217,28 @@ def correr_replica(args, seed: int, guardar_png: bool, verbose: bool):
     resultados[SOLO_LOCAL].update({"rondas": None, "mb": 0.0, "segundos": time.time() - t0})
     print(f"  solo local        acc={resultados[SOLO_LOCAL]['accuracy']:.4f}  "
           f"({len(idx0)} de {len(X_train)} muestras)")
+
+    # ------------------------------------------------------ 2b. piso non-IID
+    t0 = time.time()
+    por_cliente = []
+    for idx in part_niid:
+        solo = train_centralizado(
+            construir, X_train[idx], y_train_oh[idx], X_test, y_test_oh,
+            epochs=presupuesto, batch_size=args.batch_size, verbose=False,
+        )
+        por_cliente.append(evaluar(solo["modelo"], X_test, y_test, eps, etiquetas))
+    resultados[SOLO_LOCAL_NIID] = {
+        k: float(np.nanmean([m[k] for m in por_cliente]))
+        for k in por_cliente[0] if isinstance(por_cliente[0][k], (int, float))
+    }
+    resultados[SOLO_LOCAL_NIID].update({
+        "rondas": None, "mb": 0.0, "segundos": time.time() - t0,
+        "accuracy_por_cliente": [m["accuracy"] for m in por_cliente],
+        "muestras_por_cliente": [len(idx) for idx in part_niid],
+    })
+    print(f"  solo local niid   acc={resultados[SOLO_LOCAL_NIID]['accuracy']:.4f}  "
+          f"(promedio de {len(part_niid)} clientes: "
+          f"{', '.join(f'{a:.3f}' for a in resultados[SOLO_LOCAL_NIID]['accuracy_por_cliente'])})")
 
     # ---------------------------------------------------------- 3. y 4. fed
     for nombre, particiones, slug in [
@@ -350,10 +381,12 @@ def interpretar(agregado: dict, replicas: list[dict]) -> str:
 
     fed = [k for k in agregado if k.startswith("FedAvg")]
 
-    lineas.append("Contra el PISO (cliente aislado) -- es la comparacion que")
-    lineas.append("justifica el enfoque federado:")
+    lineas.append("Contra el PISO (cliente aislado con el MISMO tipo de reparto) -- es la")
+    lineas.append("comparacion que justifica el enfoque federado:")
+    tiene_piso_niid = SOLO_LOCAL_NIID in replicas[0]
     for nombre in fed:
-        c = _comparar(replicas, nombre, SOLO_LOCAL)
+        piso = SOLO_LOCAL_NIID if ("non-IID" in nombre and tiene_piso_niid) else SOLO_LOCAL
+        c = _comparar(replicas, nombre, piso)
         if c["significativo"] and c["dif"] > 0:
             v = "SUPERA al cliente aislado"
         elif c["significativo"]:
@@ -361,8 +394,13 @@ def interpretar(agregado: dict, replicas: list[dict]) -> str:
         else:
             v = "no se distingue del cliente aislado"
         lineas.append(
-            f"  {nombre}: {v} ({c['dif']:+.4f} +/- {c['ee']:.4f}, p={c['p']:.4f})"
+            f"  {nombre} vs {piso}: {v} ({c['dif']:+.4f} +/- {c['ee']:.4f}, p={c['p']:.4f})"
         )
+        if "non-IID" in nombre and not tiene_piso_niid:
+            lineas.append(
+                "    OJO: esta corrida es anterior al piso non-IID; compara contra un cliente "
+                "IID y mezcla dos efectos (ML-A3). Volver a correr."
+            )
 
     lineas.append("")
     lineas.append("Contra el TECHO (centralizado) -- cuanto cuesta no centralizar:")

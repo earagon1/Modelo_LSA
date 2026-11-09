@@ -36,10 +36,15 @@ _MASCARA = (1 << 64) - 1
 # Tope al peso de un cliente en FedAvg. n_muestras lo declara el cliente y es el peso del
 # promedio: sin tope, un update que diga 10⁶ muestras se queda con casi todo el promedio,
 # y el límite de norma no lo frena (acota cuánto se mueve el delta, no cuánto pesa). Lo
-# encontró la auditoría del 2026-11-09 (X5). La persona con más tomas del piloto (P1)
-# tiene unas 1200 (85 % de 1409); 2000 deja margen para una sesión más sin
-# castigar a nadie honesto. Pasarlo no es rechazo: el update entra con peso 2000 y queda
-# registrado (decisión D-R3, plan/federado_robustez.md), así no se pierde el aporte.
+# encontró la auditoría del 2026-11-09 (X5). Pasarlo no es rechazo: el update entra con
+# peso N_MAX_MUESTRAS y queda registrado (decisión D-R3, plan/federado_robustez.md).
+#
+# Ojo con lo que el tope NO hace: en el piloto cada persona tiene unas 106 tomas en el
+# teléfono (las ~1090 de la webcam de P1 nunca pasan por el federado), así que con 2000
+# un atacante contra dos honestos todavía pesa el 90 % (2000 / 2212). El tope solo frena
+# el 10⁶; contra un atacante la defensa es la agregación robusta (agregacion.py), que no
+# usa n. Bajarlo cerca del máximo honesto (p. ej. 200 → 49 %) castiga a quien junte
+# más sesiones: queda como decisión abierta en plan/federado_robustez.md.
 N_MAX_MUESTRAS = 2000
 
 
