@@ -115,12 +115,20 @@ class EstadoServidor:
 
     def __init__(self, pesos, clases, backbone_sha, directorio, quorum=2, timeout_s=600.0,
                  test=None, tolerancia=0.01, reloj=time.time, reanudar=None, limite_norma=LIMITE_NORMA,
-                 max_muestras=pr.N_MAX_MUESTRAS, agregacion="fedavg", beta=ag.BETA_POR_DEFECTO):
+                 max_muestras=pr.N_MAX_MUESTRAS, agregacion="fedavg", beta=ag.BETA_POR_DEFECTO,
+                 krum_f=ag.F_POR_DEFECTO, krum_m=ag.M_POR_DEFECTO):
         if agregacion not in ag.ESTRATEGIAS:
             raise ValueError(f"agregación {agregacion!r}: las opciones son {', '.join(ag.ESTRATEGIAS)}")
         ag.descartados_por_lado(1, beta)  # valida beta al arrancar, no en la primera ronda
+        if agregacion == "krum":
+            # Con un quórum que no le alcanza, Krum no corre nunca: mejor no arrancar
+            # que descubrirlo en la primera ronda con los teléfonos esperando.
+            motivo = ag.validar_krum(quorum, krum_f, krum_m)
+            if motivo:
+                raise ValueError(f"{motivo} (quórum {quorum})")
         self.agregacion = agregacion
         self.beta = beta
+        self.krum_f, self.krum_m = krum_f, krum_m
         self.pesos = [np.asarray(w, np.float32) for w in pesos]
         self.clases = list(clases)
         self.backbone_sha = backbone_sha
@@ -241,9 +249,21 @@ class EstadoServidor:
 
     def _cerrar(self, motivo: str) -> dict:
         updates = [(p["delta"], p["n"]) for p in self.pendientes.values()]
-        candidata = pr.agregar(self.pesos, updates, self.agregacion, self.beta)
-        acc = self.evaluar(candidata)
-        publicada = acc is None or self.acc_actual is None or acc >= self.acc_actual - self.tolerancia
+        parametros = {"beta": self.beta, "f": self.krum_f, "m": self.krum_m}
+        aviso = ag.advertencia(self.agregacion, len(updates), **parametros) if self.agregacion != "fedavg" else None
+        krum_elegidos = None
+        if self.agregacion == "krum" and aviso:
+            # Cerró por tiempo con menos clientes de los que Krum necesita: no hay forma
+            # robusta de elegir, así que la ronda no publica nada (el arranque ya exige
+            # un quórum suficiente, esto pasa solo por timeout).
+            candidata, acc, publicada = None, None, False
+        else:
+            if self.agregacion == "krum":
+                ids = list(self.pendientes)
+                krum_elegidos = sorted(ids[i] for i in ag.elegidos_krum(updates, self.krum_f, self.krum_m))
+            candidata = pr.agregar(self.pesos, updates, self.agregacion, **parametros)
+            acc = self.evaluar(candidata)
+            publicada = acc is None or self.acc_actual is None or acc >= self.acc_actual - self.tolerancia
         fila = {"evento": "ronda", "ronda": self.ronda, "paquete": self.paquete, "motivo": motivo,
                 "clientes": sorted(self.pendientes),
                 "n_muestras": {k: v["n"] for k, v in self.pendientes.items()},
@@ -261,8 +281,9 @@ class EstadoServidor:
                 "beta": self.beta if self.agregacion == "recortada" else None,
                 # Una ronda que cierra por tiempo puede tener menos clientes que el quórum:
                 # queda escrito si la estrategia robusta no defendió nada en esa ronda.
-                "advertencia_agregacion": (ag.advertencia(self.agregacion, len(updates), self.beta)
-                                           if self.agregacion != "fedavg" else None),
+                "advertencia_agregacion": aviso,
+                "krum": ({"f": self.krum_f, "m": self.krum_m, "elegidos": krum_elegidos}
+                         if self.agregacion == "krum" else None),
                 "metricas_locales": {k: v["metricas"] for k, v in self.pendientes.items()},
                 "duracion_s": self.reloj() - self.inicio_ronda,
                 "accuracy_antes": self.acc_actual, "accuracy_candidata": acc, "publicada": publicada}
@@ -484,14 +505,18 @@ def main():
     ap.add_argument("--max-muestras", type=int, default=pr.N_MAX_MUESTRAS,
                     help="peso máximo de un cliente en FedAvg; más que eso entra recortado (0 = sin tope)")
     ap.add_argument("--agregacion", choices=ag.ESTRATEGIAS, default="fedavg",
-                    help="fedavg (ponderado por n), mediana o recortada (robustas, sin usar n)")
+                    help="fedavg (ponderado por n), mediana, recortada o krum (robustas, sin usar n)")
     ap.add_argument("--beta", type=float, default=ag.BETA_POR_DEFECTO,
                     help="fracción que la media recortada descarta de cada punta, en [0; 0,5)")
+    ap.add_argument("--krum-f", type=int, default=ag.F_POR_DEFECTO,
+                    help="atacantes que tolera Krum; pide un quórum de 2f + 3 o más")
+    ap.add_argument("--krum-m", type=int, default=ag.M_POR_DEFECTO,
+                    help="updates que promedia Multi-Krum (1 = Krum)")
     ap.add_argument("--puerto", type=int, default=8765)
     args = ap.parse_args()
 
     opciones = {"limite_norma": args.limite_norma, "max_muestras": args.max_muestras,
-                "agregacion": args.agregacion, "beta": args.beta}
+                "agregacion": args.agregacion, "beta": args.beta, "krum_f": args.krum_f, "krum_m": args.krum_m}
     if args.cabeza:
         with open(args.cabeza, encoding="utf-8") as f:
             pesos, clases = pr.cabeza_desde_json(json.load(f))
@@ -505,7 +530,7 @@ def main():
         estado = EstadoServidor.desde_paquetes(args.dir, quorum=args.quorum, timeout_s=args.timeout,
                                                tolerancia=args.tolerancia, **opciones)
     if args.agregacion != "fedavg":
-        aviso = ag.advertencia(args.agregacion, args.quorum, args.beta)
+        aviso = ag.advertencia(args.agregacion, args.quorum, args.beta, args.krum_f, args.krum_m)
         if aviso:
             print(f"ATENCIÓN: {aviso}.", flush=True)
     servidor = crear_servidor(estado, puerto=args.puerto)

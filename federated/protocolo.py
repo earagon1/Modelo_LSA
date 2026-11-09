@@ -225,14 +225,14 @@ def validar_update(u: dict, ronda: int, formas: list[list[int]]) -> str | None:
 
 
 def agregar(pesos: list[np.ndarray], updates: list[tuple[list[np.ndarray], int]],
-            estrategia: str = "fedavg", beta: float = agregacion.BETA_POR_DEFECTO) -> list[np.ndarray]:
+            estrategia: str = "fedavg", **parametros) -> list[np.ndarray]:
     """w + sum_k (n_k / n) * delta_k, acumulado en float64 como `fedavg.aggregate`.
-    Con estrategia "mediana" o "recortada": w + la combinación robusta de los deltas
-    (`agregacion.py`, que no usa n_k)."""
+    Con estrategia "mediana", "recortada" o "krum": w + la combinación robusta de los
+    deltas (`agregacion.py`, que no usa n_k; `parametros` son beta, f y m)."""
     if not updates:
         raise ValueError("no hay updates para agregar")
     if estrategia != "fedavg":
-        combinado = agregacion.combinar(updates, estrategia, beta)
+        combinado = agregacion.combinar(updates, estrategia, **parametros)
         return [(np.asarray(w, np.float64) + np.asarray(c, np.float64)).astype(np.float32)
                 for w, c in zip(pesos, combinado, strict=True)]
     total = sum(n for _, n in updates)
