@@ -302,6 +302,7 @@ def test_http_una_conexion_que_no_manda_el_cuerpo_se_corta(tmp_path, monkeypatch
 
 def _toma(uuid, label="hola", pid="p1_a"):
     return {"esquema": "senar-muestra-v2", "uuid": uuid, "label": label, "participant_id": pid,
+            "img_w": 640, "img_h": 480,
             "frames": [{"t_ms": 0, "manos": [{"e": "Right", "s": 0.9, "lm": [0.5] * 63}]}] * 10}
 
 

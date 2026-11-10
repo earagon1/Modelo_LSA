@@ -11,7 +11,8 @@ Sirve para probar el ciclo entero sin teléfonos y para el piloto híbrido: tel�
 reales más clientes emulados con los datos de las otras personas (PLAN_MAESTRO §6.2).
 
 Uso, desde la raíz de modelo_LSA, con el servidor corriendo:
-    python federated/cliente_emulado.py --servidor http://127.0.0.1:8765 --persona P2 --rondas 3
+    python federated/cliente_emulado.py --servidor https://127.0.0.1:8765 --persona P2 --rondas 3 \\
+        --certificado federated/piloto/tls/servidor.crt --codigo XXXX-XXXX-XXXX-XXXX
 """
 from __future__ import annotations
 
@@ -20,7 +21,9 @@ import hashlib
 import json
 import os
 import sys
+import ssl
 import time
+import urllib.error
 import urllib.request
 
 import numpy as np
@@ -35,11 +38,25 @@ DROPOUT = 0.5
 LR = 1e-3
 
 
+# Lo que pone main(): con HTTPS se confía en el certificado del servidor (es autofirmado,
+# así que es su propia autoridad; equivale a fijar su clave) y los POST llevan el código.
+CONEXION = {"contexto": None, "codigo": None}
+
+
+def contexto_para(certificado: str):
+    ctx = ssl.create_default_context(cafile=certificado)
+    ctx.check_hostname = False  # la IP cambia con la Wi-Fi; la confianza es en la clave
+    return ctx
+
+
 def pedir(url: str, cuerpo: dict | None = None, timeout: float = 60):
     datos = json.dumps(cuerpo).encode() if cuerpo is not None else None
-    req = urllib.request.Request(url, datos, {"Content-Type": "application/json"} if datos else {})
+    cabeceras = {"Content-Type": "application/json"} if datos else {}
+    if datos and CONEXION["codigo"]:
+        cabeceras["Authorization"] = f"Bearer {CONEXION['codigo']}"
+    req = urllib.request.Request(url, datos, cabeceras)
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with urllib.request.urlopen(req, timeout=timeout, context=CONEXION["contexto"]) as r:
             return r.status, r.read()
     except urllib.error.HTTPError as e:
         return e.code, e.read()
@@ -91,7 +108,14 @@ def main():
     ap.add_argument("--aportar", action="store_true", help="subir también sus tomas (POST /muestras)")
     ap.add_argument("--cache", default=os.path.join(AQUI, "piloto_clientes"))
     ap.add_argument("--espera", type=float, default=2.0, help="segundos entre consultas mientras espera la ronda")
+    ap.add_argument("--certificado", help="servidor.crt del servidor (con https://)")
+    ap.add_argument("--codigo", help="código de participación (alta_participante.py --participante emulado_p2)")
     args = ap.parse_args()
+    if args.servidor.startswith("https://"):
+        if not args.certificado:
+            raise SystemExit("con https hace falta --certificado <dir>/tls/servidor.crt")
+        CONEXION["contexto"] = contexto_para(args.certificado)
+    CONEXION["codigo"] = args.codigo
 
     import tensorflow as tf
     tf.config.set_visible_devices([], "GPU")  # varios clientes a la vez: la GPU no hace falta

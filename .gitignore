@@ -27,3 +27,7 @@ runs/
 
 # Directorio de trabajo del servidor federado: guarda tomas aportadas por personas
 federated/piloto*/
+
+# Clave privada y certificado del servidor federado (generar_certificado.py)
+federated/**/tls/
+*.key

@@ -16,19 +16,26 @@ Hace dos cosas:
 
 Todo queda en el directorio de trabajo: estado.json, cabezas/v<N>.json (cada cabeza
 publicada), rondas.jsonl (una línea por ronda cerrada o paquete nuevo, para el
-informe), muestras/<participante>.jsonl y paquetes/.
+informe), muestras/<participante>.jsonl, paquetes/, tls/ y participantes.json.
+
+Por HTTPS con un certificado autofirmado que la app fija por su huella, y los POST
+con el código de participación de cada persona (`seguridad.py`).
 
 Solo biblioteca estándar + numpy: http.server alcanza para unos pocos teléfonos.
 
 Uso, desde la raíz de modelo_LSA (después de federated/reentrenar.py --dir <dir>):
+    python federated/generar_certificado.py --dir federated/piloto            # una vez
+    python federated/alta_participante.py --dir federated/piloto --participante p_xxx
     python federated/servidor.py --dir federated/piloto --quorum 2 --timeout 600
 """
 from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import socket
+import ssl
 import sys
 import threading
 import time
@@ -39,6 +46,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import agregacion as ag
 import protocolo as pr
+import seguridad as seg
 
 # Límite a la norma L2 de cada update (propuesta, tabla de riesgos: "limitar la magnitud
 # de actualizaciones"). 3 veces la mediana de los updates honestos del piloto (0,68-0,76:
@@ -69,13 +77,34 @@ def validar_muestra(m: dict, participante: str) -> str | None:
     if not isinstance(etiqueta, str) or not etiqueta or etiqueta != etiqueta.strip().lower() \
             or not all(c.isascii() and (c.isalnum() or c == " ") for c in etiqueta):
         return f"etiqueta {etiqueta!r}: minúsculas, sin tildes, palabras separadas por espacio"
+    # Estructura completa de MuestraV2.kt (auditoría, X5: antes una toma con frames que no
+    # eran objetos, o landmarks que no eran números, entraba y rompía reentrenar.py).
+    for clave in ("img_w", "img_h"):
+        v = m.get(clave)
+        if isinstance(v, bool) or not isinstance(v, int) or not 1 <= v <= 10_000:
+            return f"{clave} tiene que ser un entero entre 1 y 10000"
     frames = m.get("frames")
     if not isinstance(frames, list) or not 1 <= len(frames) <= 120:
         return "frames fuera de rango"
     for f in frames:
+        if not isinstance(f, dict) or not isinstance(f.get("manos", []), list):
+            return "un frame que no es un objeto con su lista de manos"
+        if len(f.get("manos", [])) > 2:
+            return "un frame con más de dos manos"
         for mano in f.get("manos", []):
-            if len(mano.get("lm", [])) != 63:
+            if not isinstance(mano, dict):
+                return "una mano que no es un objeto"
+            if mano.get("e") not in ("Left", "Right"):
+                return f"lateralidad {mano.get('e')!r}: tiene que ser Left o Right"
+            s = mano.get("s")
+            if isinstance(s, bool) or not isinstance(s, (int, float)) or not 0 <= s <= 1:
+                return "score de la mano fuera de [0, 1]"
+            lm = mano.get("lm", [])
+            if not isinstance(lm, list) or len(lm) != 63:
                 return "una mano sin sus 21 landmarks"
+            if not all(not isinstance(v, bool) and isinstance(v, (int, float)) and math.isfinite(v)
+                       and abs(v) <= 10 for v in lm):
+                return "landmarks que no son números finitos (o fuera de ±10)"
     return None
 
 
@@ -424,7 +453,23 @@ class EstadoServidor:
                       f, indent=1)
 
 
-def crear_servidor(estado: EstadoServidor, host="0.0.0.0", puerto=8765) -> ThreadingHTTPServer:
+class _Servidor(ThreadingHTTPServer):
+    def handle_error(self, request, client_address):
+        # Un teléfono que todavía no confirmó la huella corta el handshake: es esperable y
+        # no merece un traceback entero en la consola.
+        error = sys.exc_info()[1]
+        if isinstance(error, (ssl.SSLError, ConnectionError, TimeoutError)):
+            sys.stderr.write(f"[{time.strftime('%H:%M:%S')}] {client_address[0]} conexión cortada: {error}\n")
+        else:
+            super().handle_error(request, client_address)
+
+
+def crear_servidor(estado: EstadoServidor, host="0.0.0.0", puerto=8765, tls: ssl.SSLContext | None = None,
+                   autenticador=None) -> ThreadingHTTPServer:
+    """`tls`: contexto de `seguridad.contexto_tls` (None = HTTP en claro, solo para tests y
+    pruebas locales). `autenticador`: algo con `verificar(cabecera) -> participant_id | None`
+    (None = sin autenticación). Los GET son públicos: el modelo no es secreto; lo que se
+    protege es quién puede mandar ajustes y tomas."""
     class Manejador(BaseHTTPRequestHandler):
         # StreamRequestHandler lo aplica al socket; handle_one_request atrapa el
         # TimeoutError y cierra la conexión.
@@ -493,6 +538,17 @@ def crear_servidor(estado: EstadoServidor, host="0.0.0.0", puerto=8765) -> Threa
             if largo > limites[self.path]:
                 self._responder(413, {"aceptado": False, "motivo": f"más de {limites[self.path]} bytes"})
                 return
+            autenticado = None
+            if autenticador is not None:
+                autenticado = autenticador.verificar(self.headers.get("Authorization"))
+                if autenticado is None:
+                    # El cuerpo se lee igual (ya se sabe que entra en el límite) y se tira:
+                    # contestar sin leerlo cierra la conexión mientras el teléfono todavía
+                    # manda, y del otro lado se ve "conexión reiniciada" en vez de un 401.
+                    self.rfile.read(largo)
+                    self._responder(401, {"aceptado": False,
+                                          "motivo": "falta el código de participación o no es válido"})
+                    return
             try:
                 cuerpo = json.loads(self.rfile.read(largo))
             except (json.JSONDecodeError, UnicodeDecodeError):
@@ -500,6 +556,11 @@ def crear_servidor(estado: EstadoServidor, host="0.0.0.0", puerto=8765) -> Threa
                 return
             if not isinstance(cuerpo, dict):
                 self._responder(400, {"aceptado": False, "motivo": "se esperaba un objeto JSON"})
+                return
+            if autenticado is not None and cuerpo.get("participant_id") != autenticado:
+                # El código dice quién es; el cuerpo no puede decir otra cosa (auditoría, X5).
+                self._responder(403, {"aceptado": False,
+                                      "motivo": "el participant_id no es el de tu código de participación"})
                 return
             if self.path == "/update":
                 codigo, respuesta = estado.recibir(cuerpo)
@@ -510,7 +571,12 @@ def crear_servidor(estado: EstadoServidor, host="0.0.0.0", puerto=8765) -> Threa
         def log_message(self, formato, *args):
             sys.stderr.write(f"[{time.strftime('%H:%M:%S')}] {self.address_string()} {formato % args}\n")
 
-    return ThreadingHTTPServer((host, puerto), Manejador)
+    servidor = _Servidor((host, puerto), Manejador)
+    if tls is not None:
+        # El handshake se hace en el hilo de cada conexión (con su timeout), no en el
+        # accept(): un cliente lento no traba a los demás.
+        servidor.socket = tls.wrap_socket(servidor.socket, server_side=True, do_handshake_on_connect=False)
+    return servidor
 
 
 def ip_local() -> str:
@@ -551,7 +617,32 @@ def main():
     ap.add_argument("--dp-clip", type=float, default=None,
                     help="recorte C de cada update para la DP (por defecto, --limite-norma)")
     ap.add_argument("--puerto", type=int, default=8765)
+    ap.add_argument("--cert", help="certificado TLS (por defecto <dir>/tls/servidor.crt, de generar_certificado.py)")
+    ap.add_argument("--key", help="clave privada TLS (por defecto <dir>/tls/servidor.key)")
+    ap.add_argument("--sin-tls", action="store_true",
+                    help="HTTP en claro: solo para probar en esta PC; la app no se conecta así")
+    ap.add_argument("--sin-autenticacion", action="store_true",
+                    help="acepta ajustes y tomas sin código de participación (cliente emulado, pruebas)")
     args = ap.parse_args()
+
+    tls = None
+    if not args.sin_tls:
+        cert = args.cert or os.path.join(args.dir, "tls", "servidor.crt")
+        clave = args.key or os.path.join(args.dir, "tls", "servidor.key")
+        if not (os.path.exists(cert) and os.path.exists(clave)):
+            raise SystemExit(f"No está el certificado ({cert}). Generalo una vez con:\n"
+                             f"    python federated/generar_certificado.py --dir {args.dir}\n"
+                             "o arrancá con --sin-tls para probar solo en esta PC.")
+        tls = seg.contexto_tls(cert, clave)
+        with open(cert, encoding="ascii") as f:
+            huella = seg.huella(f.read())
+    autenticador = None
+    if not args.sin_autenticacion:
+        autenticador = seg.AutenticadorCodigos(os.path.join(args.dir, "participantes.json"))
+        if not autenticador.participantes():
+            print("ATENCIÓN: nadie tiene código de participación todavía. Dá de alta con:\n"
+                  f"    python federated/alta_participante.py --dir {args.dir} --participante <código de la app>",
+                  flush=True)
 
     opciones = {"limite_norma": args.limite_norma, "max_muestras": args.max_muestras,
                 "agregacion": args.agregacion, "beta": args.beta, "krum_f": args.krum_f, "krum_m": args.krum_m,
@@ -572,7 +663,7 @@ def main():
         aviso = ag.advertencia(args.agregacion, args.quorum, args.beta, args.krum_f, args.krum_m)
         if aviso:
             print(f"ATENCIÓN: {aviso}.", flush=True)
-    servidor = crear_servidor(estado, puerto=args.puerto)
+    servidor = crear_servidor(estado, puerto=args.puerto, tls=tls, autenticador=autenticador)
 
     def vigilar():
         while True:
@@ -584,9 +675,14 @@ def main():
             if cierre:
                 print(f"ronda cerrada por tiempo: {cierre}", flush=True)
     threading.Thread(target=vigilar, daemon=True).start()
-    print(f"Servidor federado en http://{ip_local()}:{args.puerto}  (paquete v{estado.paquete}, ronda "
+    esquema = "http" if tls is None else "https"
+    print(f"Servidor federado en {esquema}://{ip_local()}:{args.puerto}  (paquete v{estado.paquete}, ronda "
           f"{estado.ronda}, accuracy de test {estado.acc_actual}). Escribí esa dirección en la app. "
           "Ctrl+C para cortar.", flush=True)
+    if tls is not None:
+        print(f"Huella del servidor: {seg.huella_para_mostrar(huella)}  (la app la muestra la primera vez: "
+              "tiene que ser igual)", flush=True)
+    print(f"Autenticación: {'apagada' if autenticador is None else 'con código de participación'}", flush=True)
     try:
         servidor.serve_forever()
     except KeyboardInterrupt:
