@@ -76,6 +76,8 @@ def main():
     ap.add_argument("--rondas", type=int, default=5)
     ap.add_argument("--epocas", type=int, default=2)
     args = ap.parse_args()
+    # Con la salida redirigida a un archivo, Windows usa cp1252 y "ε" o "√" tiran la corrida.
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
     import tensorflow as tf
     tf.config.set_visible_devices([], "GPU")
