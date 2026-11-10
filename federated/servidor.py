@@ -116,7 +116,20 @@ class EstadoServidor:
     def __init__(self, pesos, clases, backbone_sha, directorio, quorum=2, timeout_s=600.0,
                  test=None, tolerancia=0.01, reloj=time.time, reanudar=None, limite_norma=LIMITE_NORMA,
                  max_muestras=pr.N_MAX_MUESTRAS, agregacion="fedavg", beta=ag.BETA_POR_DEFECTO,
-                 krum_f=ag.F_POR_DEFECTO, krum_m=ag.M_POR_DEFECTO):
+                 krum_f=ag.F_POR_DEFECTO, krum_m=ag.M_POR_DEFECTO, dp_ruido=0.0, dp_clip=None, dp_semilla=None):
+        if dp_ruido < 0:
+            raise ValueError("dp_ruido tiene que ser >= 0")
+        if dp_ruido > 0:
+            # DP-FedAvg promedia sin ponderar: no se combina con mediana ni Krum, y n no pesa.
+            if agregacion != "fedavg":
+                raise ValueError("la privacidad diferencial va con agregación fedavg (promedio sin ponderar)")
+            dp_clip = dp_clip or limite_norma
+            if not dp_clip or dp_clip <= 0:
+                raise ValueError("la privacidad diferencial necesita un recorte: --dp-clip o --limite-norma")
+        self.dp_ruido, self.dp_clip = dp_ruido, (dp_clip if dp_ruido > 0 else None)
+        # Sin semilla, ruido de la entropía del sistema: con una semilla fija, reiniciar el
+        # servidor repetiría la misma secuencia de ruido. La semilla es solo para tests.
+        self.dp_rng = np.random.default_rng(dp_semilla)
         if agregacion not in ag.ESTRATEGIAS:
             raise ValueError(f"agregación {agregacion!r}: las opciones son {', '.join(ag.ESTRATEGIAS)}")
         ag.descartados_por_lado(1, beta)  # valida beta al arrancar, no en la primera ronda
@@ -144,6 +157,8 @@ class EstadoServidor:
         self.ronda = reanudar["ronda"] if reanudar else 0
         self.version = reanudar["version"] if reanudar else 0
         self.paquete = reanudar["paquete"] if reanudar else 0
+        # Rondas que ya gastaron privacidad: sobreviven a un reinicio, si no ε volvería a 0.
+        self.rondas_dp = reanudar.get("rondas_dp", 0) if reanudar else 0
         self.manifiesto = None
         if reanudar:
             with open(os.path.join(directorio, "paquetes", f"v{self.paquete}", "manifiesto.json"),
@@ -202,7 +217,14 @@ class EstadoServidor:
                     "recibidos": len(self.pendientes), "quorum": self.quorum, "timeout_s": self.timeout_s,
                     "segundos_restantes": (max(0.0, self.timeout_s - (self.reloj() - self._primer_update()))
                                            if self.pendientes else None),
-                    "accuracy_test": self.acc_actual, "agregacion": self.agregacion}
+                    "accuracy_test": self.acc_actual, "agregacion": self.agregacion,
+                    "privacidad": self._privacidad()}
+
+    def _privacidad(self) -> dict | None:
+        if not self.dp_ruido:
+            return None
+        return {"ruido_z": self.dp_ruido, "clip": self.dp_clip, "rondas": self.rondas_dp,
+                "delta": ag.DELTA_DP, "epsilon": ag.epsilon_zcdp(self.rondas_dp, self.dp_ruido)}
 
     def evaluar(self, pesos) -> float | None:
         if self.test is None:
@@ -251,8 +273,18 @@ class EstadoServidor:
         updates = [(p["delta"], p["n"]) for p in self.pendientes.values()]
         parametros = {"beta": self.beta, "f": self.krum_f, "m": self.krum_m}
         aviso = ag.advertencia(self.agregacion, len(updates), **parametros) if self.agregacion != "fedavg" else None
-        krum_elegidos = None
-        if self.agregacion == "krum" and aviso:
+        krum_elegidos, detalle_dp = None, None
+        if self.dp_ruido:
+            # Toda ronda que se agrega gasta privacidad, se publique o no: el control de
+            # calidad mira la cabeza ya ruidosa (es posprocesamiento), pero la cuenta es
+            # por agregación hecha, que es lo conservador.
+            combinado, detalle_dp = ag.promedio_privado(updates, self.dp_clip, self.dp_ruido, self.dp_rng)
+            candidata = [(np.asarray(w, np.float64) + c).astype(np.float32)
+                         for w, c in zip(self.pesos, combinado, strict=True)]
+            self.rondas_dp += 1
+            acc = self.evaluar(candidata)
+            publicada = acc is None or self.acc_actual is None or acc >= self.acc_actual - self.tolerancia
+        elif self.agregacion == "krum" and aviso:
             # Cerró por tiempo con menos clientes de los que Krum necesita: no hay forma
             # robusta de elegir, así que la ronda no publica nada (el arranque ya exige
             # un quórum suficiente, esto pasa solo por timeout).
@@ -282,6 +314,7 @@ class EstadoServidor:
                 # Una ronda que cierra por tiempo puede tener menos clientes que el quórum:
                 # queda escrito si la estrategia robusta no defendió nada en esa ronda.
                 "advertencia_agregacion": aviso,
+                "privacidad": ({**self._privacidad(), **detalle_dp} if detalle_dp else None),
                 "krum": ({"f": self.krum_f, "m": self.krum_m, "elegidos": krum_elegidos}
                          if self.agregacion == "krum" else None),
                 "metricas_locales": {k: v["metricas"] for k, v in self.pendientes.items()},
@@ -386,7 +419,8 @@ class EstadoServidor:
     def _guardar_estado(self):
         with open(os.path.join(self.dir, "estado.json"), "w", encoding="utf-8") as f:
             json.dump({"ronda": self.ronda, "version": self.version, "paquete": self.paquete,
-                       "quorum": self.quorum, "timeout_s": self.timeout_s, "accuracy_test": self.acc_actual},
+                       "quorum": self.quorum, "timeout_s": self.timeout_s, "accuracy_test": self.acc_actual,
+                       "rondas_dp": self.rondas_dp, "privacidad": self._privacidad()},
                       f, indent=1)
 
 
@@ -512,11 +546,16 @@ def main():
                     help="atacantes que tolera Krum; pide un quórum de 2f + 3 o más")
     ap.add_argument("--krum-m", type=int, default=ag.M_POR_DEFECTO,
                     help="updates que promedia Multi-Krum (1 = Krum)")
+    ap.add_argument("--dp-ruido", type=float, default=0.0,
+                    help="privacidad diferencial central: multiplicador de ruido z (0 = apagada)")
+    ap.add_argument("--dp-clip", type=float, default=None,
+                    help="recorte C de cada update para la DP (por defecto, --limite-norma)")
     ap.add_argument("--puerto", type=int, default=8765)
     args = ap.parse_args()
 
     opciones = {"limite_norma": args.limite_norma, "max_muestras": args.max_muestras,
-                "agregacion": args.agregacion, "beta": args.beta, "krum_f": args.krum_f, "krum_m": args.krum_m}
+                "agregacion": args.agregacion, "beta": args.beta, "krum_f": args.krum_f, "krum_m": args.krum_m,
+                "dp_ruido": args.dp_ruido, "dp_clip": args.dp_clip}
     if args.cabeza:
         with open(args.cabeza, encoding="utf-8") as f:
             pesos, clases = pr.cabeza_desde_json(json.load(f))

@@ -120,6 +120,58 @@ def krum(updates: list[tuple[list[np.ndarray], int]], f: int = F_POR_DEFECTO,
     return [p[elegidos].mean(axis=0).astype(np.float32) for p in pilas], elegidos
 
 
+# --- privacidad diferencial central (DP-FedAvg, McMahan et al. 2018) ---
+#
+# Cada update se recorta a norma C, se promedian SIN ponderar por n (con pesos que
+# declara el cliente, la sensibilidad dependería de lo que él diga y la garantía se
+# rompe) y al promedio se le suma ruido gaussiano N(0, (z·C/k)²) en cada coordenada.
+# Vecindad: agregar o sacar a una persona entera (todo su aporte de la ronda), así que
+# la sensibilidad de la suma es C y el ruido sobre la suma tiene desvío z·C. Todos los
+# clientes participan en cada ronda (no hay muestreo), así que no hay amplificación.
+
+DELTA_DP = 1e-5
+
+
+def promedio_privado(updates: list[tuple[list[np.ndarray], int]], clip: float, ruido: float,
+                     rng) -> tuple[list[np.ndarray], dict]:
+    """(promedio recortado + ruido, detalle). `ruido` es el multiplicador z (0 = sin ruido)."""
+    if not clip > 0:
+        raise ValueError(f"el recorte C tiene que ser > 0: vino {clip}")
+    if ruido < 0:
+        raise ValueError(f"el multiplicador de ruido z tiene que ser >= 0: vino {ruido}")
+    pilas = _apilar(updates)
+    k = len(updates)
+    planos = np.concatenate([p.reshape(k, -1) for p in pilas], axis=1)
+    normas = np.sqrt(np.sum(planos ** 2, axis=1))
+    factores = np.minimum(1.0, clip / np.maximum(normas, 1e-12))
+    desvio = ruido * clip / k
+    resultado = []
+    for p in pilas:
+        escalado = p * factores.reshape((k,) + (1,) * (p.ndim - 1))
+        media = escalado.mean(axis=0)
+        if desvio > 0:
+            media = media + rng.normal(0.0, desvio, media.shape)
+        resultado.append(media.astype(np.float32))
+    return resultado, {"clientes": k, "recortados": int(np.sum(normas > clip)), "desvio_ruido": float(desvio)}
+
+
+def epsilon_zcdp(rondas: int, ruido: float, delta: float = DELTA_DP) -> float:
+    """ε del mecanismo gaussiano compuesto `rondas` veces, por zCDP (Bun y Steinke, 2016):
+    cada ronda es (1 / 2z²)-zCDP, se suman, y ρ-zCDP implica (ρ + 2·√(ρ·ln(1/δ)), δ)-DP.
+    Es una cota simple; un contador RDP con muestreo de clientes daría menos, pero acá
+    no hay muestreo. Sin ruido (z = 0) no hay garantía: ε = ∞."""
+    if rondas < 0:
+        raise ValueError("rondas tiene que ser >= 0")
+    if not 0 < delta < 1:
+        raise ValueError("delta tiene que estar en (0, 1)")
+    if rondas == 0:
+        return 0.0
+    if ruido <= 0:
+        return float("inf")
+    rho = rondas / (2 * ruido ** 2)
+    return float(rho + 2 * np.sqrt(rho * np.log(1 / delta)))
+
+
 def combinar(updates: list[tuple[list[np.ndarray], int]], estrategia: str, beta: float = BETA_POR_DEFECTO,
              f: int = F_POR_DEFECTO, m: int = M_POR_DEFECTO) -> list[np.ndarray]:
     """La agregación robusta pedida. "fedavg" no pasa por acá: lo hace `protocolo.agregar`,
