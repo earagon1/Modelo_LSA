@@ -178,6 +178,40 @@ def correr(entrenador, pesos0, clientes, atacantes, ataque, estrategia, rondas, 
     return final, pesos
 
 
+def cargar_piloto(directorio):
+    """(paquete, cabeza inicial, clases, clientes_con(S), evaluación) del piloto.
+
+    Entrenan las tomas de teléfono de la sesión 1 que no están en el test fijo, ya
+    pasadas por el backbone del paquete (embeddings de 128). `clientes_con(S)` las parte
+    con `data.partition_subclientes`. La evaluación es la sesión 2: (emb, y, persona)."""
+    from data import partition_subclientes
+    from servidor import leer_paquete, ultimo_paquete
+
+    from lsa import dataset as ds
+    from lsa.export import inferir_tflite
+
+    n = ultimo_paquete(directorio)
+    man, pesos0, clases, _ = leer_paquete(directorio, n)
+    with open(os.path.join(directorio, "paquetes", f"v{n}", "backbone.tflite"), "rb") as f:
+        tfl = f.read()
+    d = ds.cargar(incluir_nada=True, clases=clases)
+    tel = (d.fuente == "telefono") & ~np.isin(d.uuid, list(man.get("uuids_test", [])))
+    idx = np.where(tel)[0]
+    emb = inferir_tflite(tfl, d.X[idx]).astype(np.float32)
+    y, persona = d.y[idx], d.persona[idx]
+    b = ds.cargar(incluir_nada=True, bloques=("B",), clases=clases)
+    b_tel = b.fuente == "telefono"
+    evaluacion = (inferir_tflite(tfl, b.X[b_tel]).astype(np.float32), b.y[b_tel], b.persona[b_tel])
+    print(f"paquete v{n} | entrenan {len(idx)} tomas de la sesión 1 | evalúan {int(b_tel.sum())} de la "
+          f"sesión 2: {dict(zip(*np.unique(evaluacion[2], return_counts=True), strict=True))}", flush=True)
+
+    def clientes_con(sub_clientes):
+        partes, _ = partition_subclientes(persona, y, sub_clientes, seed=0)
+        return [(emb[p], y[p]) for p in partes]
+
+    return n, pesos0, clases, clientes_con, evaluacion
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--dir", required=True, help="directorio del piloto (paquete con backbone y cabeza)")
@@ -194,31 +228,10 @@ def main():
 
     import tensorflow as tf
     tf.config.set_visible_devices([], "GPU")  # modelos chicos: la CPU va más rápido que copiar a la GPU
-    from data import partition_subclientes
-    from servidor import leer_paquete, ultimo_paquete
 
-    from lsa import dataset as ds
-    from lsa.export import inferir_tflite
-
-    n = ultimo_paquete(args.dir)
-    man, pesos0, clases, _ = leer_paquete(args.dir, n)
-    with open(os.path.join(args.dir, "paquetes", f"v{n}", "backbone.tflite"), "rb") as f:
-        tfl = f.read()
-    d = ds.cargar(incluir_nada=True, clases=clases)
-    excluir = list(man.get("uuids_test", []))
-    tel = (d.fuente == "telefono") & ~np.isin(d.uuid, excluir)
-    emb = np.zeros((len(d.y), 128), np.float32)
-    emb[tel] = inferir_tflite(tfl, d.X[tel]).astype(np.float32)
-    b = ds.cargar(incluir_nada=True, bloques=("B",), clases=clases)
-    b_tel = b.fuente == "telefono"
-    evaluacion = (inferir_tflite(tfl, b.X[b_tel]).astype(np.float32), b.y[b_tel], b.persona[b_tel])
-    print(f"paquete v{n} | entrenan {int(tel.sum())} tomas de la sesión 1 | evalúan {int(b_tel.sum())} de la "
-          f"sesión 2: {dict(zip(*np.unique(evaluacion[2], return_counts=True), strict=True))}", flush=True)
-
-    idx = np.where(tel)[0]
-    por_persona = [(emb[idx[p]], d.y[idx[p]]) for p in partition_subclientes(d.persona[idx], d.y[idx], 1)[0]]
-    partes, _ = partition_subclientes(d.persona[idx], d.y[idx], args.sub_clientes, seed=0)
-    sub = [(emb[idx[p]], d.y[idx[p]]) for p in partes]
+    n, pesos0, clases, clientes_con, evaluacion = cargar_piloto(args.dir)
+    por_persona = clientes_con(1)
+    sub = clientes_con(args.sub_clientes)
     escenarios = {
         "a_3_personas_1_atacante": (por_persona, 1, args.semillas),
         f"b_{len(sub)}_subclientes_1_atacante": (sub, 1, args.semillas_b),
