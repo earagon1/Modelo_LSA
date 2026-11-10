@@ -32,10 +32,12 @@ $PY federated/verificar_export.py <json>    # valida un export del teléfono (so
 $PY validacion_cruzada.py                   # 5-fold OOF (lento; escribe en resultados_validacion/)
 # Federado por red local (plan/federado_completo.md, contrato contract/federado_v1.json)
 $PY federated/reentrenar.py --dir federated/piloto   # reentrena con lo aportado y publica paquetes/v<N> (si pasa los controles)
-$PY federated/servidor.py --dir federated/piloto --quorum 2   # sirve rondas, tomas y paquetes; imprime la IP para la app
-$PY federated/cliente_emulado.py --servidor http://<ip>:8765 --persona P2 --rondas 3   # un "teléfono" con las tomas de P2
+$PY federated/generar_certificado.py --dir federated/piloto   # una vez: TLS autofirmado en <dir>/tls/ (imprime la huella)
+$PY federated/alta_participante.py --dir federated/piloto --participante <seudónimo de la app>   # imprime su código
+$PY federated/servidor.py --dir federated/piloto --quorum 2   # HTTPS + códigos; imprime la IP y la huella para la app
+$PY federated/cliente_emulado.py --servidor https://<ip>:8765 --persona P2 --rondas 3 --certificado federated/piloto/tls/servidor.crt --codigo <código>
 ```
-- `federated/piloto*/` está en `.gitignore`: guarda tomas aportadas por personas. Respaldarlo en `D:` como los datos.
+- `federated/piloto*/` está en `.gitignore`: guarda tomas aportadas por personas, la clave TLS y los hashes de los códigos. Respaldarlo en `D:` como los datos.
 
 ## Datos (gitignoreados, solo existen en esta máquina)
 - `frame_actions/<clase>/sample_<timestamp>/frame_NN.jpg`: 12 clases × 100 tomas, webcam, **una sola persona**.
