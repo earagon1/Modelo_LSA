@@ -83,11 +83,51 @@ def cobertura(p, y, nada):
     return filas
 
 
+def _en_umbral(p, y, nada, u):
+    conf, pred = p.max(1), p.argmax(1)
+    mostrada = (conf >= u) & (pred != nada)
+    return float(mostrada.mean()), (float((pred[mostrada] == y[mostrada]).mean()) if mostrada.any() else None)
+
+
+def umbral_sin_mirar(p, y, persona, nada, objetivo):
+    """El umbral elegido con el criterio, pero sin las predicciones de la persona que se
+    mide: para cada persona, el menor umbral que logra el acierto objetivo sobre las demás,
+    evaluado en ella. Elegir el umbral sobre las mismas predicciones donde se reporta su
+    acierto lo infla (auditoría, X2)."""
+    por_persona, umbrales = {}, {}
+    for q in sorted(set(persona.tolist())):
+        otras, ella = persona != q, persona == q
+        curva = cobertura(p[otras], y[otras], nada)
+        ok = [c for c in curva if c["acierto_mostradas"] is not None and c["acierto_mostradas"] >= objetivo]
+        u = (ok[0] if ok else max(curva, key=lambda c: c["acierto_mostradas"] or 0))["umbral"]
+        mostradas, acierto = _en_umbral(p[ella], y[ella], nada, u)
+        por_persona[q], umbrales[q] = {"umbral": u, "mostradas": mostradas, "acierto_mostradas": acierto}, u
+    aciertos = [v["acierto_mostradas"] for v in por_persona.values() if v["acierto_mostradas"] is not None]
+    return {"por_persona": por_persona, "umbrales": umbrales,
+            "mostradas_media": float(np.mean([v["mostradas"] for v in por_persona.values()])),
+            "acierto_media": float(np.mean(aciertos)), "acierto_min": float(min(aciertos)),
+            "acierto_max": float(max(aciertos))}
+
+
+def umbral_fijo_por_persona(p, y, persona, nada, u):
+    """Cobertura y acierto de un umbral fijo, persona por persona (el ± entre personas)."""
+    por_persona = {}
+    for q in sorted(set(persona.tolist())):
+        ella = persona == q
+        mostradas, acierto = _en_umbral(p[ella], y[ella], nada, u)
+        por_persona[q] = {"mostradas": mostradas, "acierto_mostradas": acierto}
+    a = [v["acierto_mostradas"] for v in por_persona.values()]
+    return {"umbral": u, "por_persona": por_persona, "acierto_media": float(np.mean(a)),
+            "acierto_desvio": float(np.std(a, ddof=1))}
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--semillas", nargs="+", type=int, default=[0, 1, 2])
     ap.add_argument("--acierto-objetivo", type=float, default=0.85)
     ap.add_argument("--etiqueta", default="lopo")
+    ap.add_argument("--umbral-app", type=float, default=0.75,
+                    help="el umbral que usa la app (decisión de Evelin); el criterio solo lo sugiere")
     args = ap.parse_args()
 
     import tensorflow as tf
@@ -101,7 +141,7 @@ def main():
     personas = sorted(set(d.persona[tel].tolist()))
     print(d.resumen(), flush=True)
 
-    pliegues, todas_p, todas_pt, todas_y = [], [], [], []
+    pliegues, todas_p, todas_pt, todas_y, todas_persona, todas_semilla = [], [], [], [], [], []
     for semilla in args.semillas:
         for p in personas:
             otros = np.where(d.persona != p)[0]
@@ -121,6 +161,8 @@ def main():
             todas_p.append(p_raw)
             todas_pt.append(p_t)
             todas_y.append(y)
+            todas_persona.append(np.full(len(y), p))
+            todas_semilla.append(np.full(len(y), semilla))
             print(f"  semilla {semilla} {p}: T={t:.2f} acc {f['accuracy']:.3f} "
                   f"ECE {f['ece_sin']:.3f} -> {f['ece_con']:.3f}", flush=True)
 
@@ -131,9 +173,13 @@ def main():
                   and c["acierto_mostradas"] >= args.acierto_objetivo]
     umbral = candidatos[0] if candidatos else max(curva_con, key=lambda c: c["acierto_mostradas"] or 0)
     con_07 = next(c for c in curva_sin if abs(c["umbral"] - 0.7) < 1e-9)
+    PER, SEM = np.concatenate(todas_persona), np.concatenate(todas_semilla)
+    anidado = umbral_sin_mirar(PT, Y, PER, nada, args.acierto_objetivo)
+    app = umbral_fijo_por_persona(PT, Y, PER, nada, args.umbral_app)
 
     r = {"config": vars(args), "datos": d.resumen(), "pliegues": pliegues,
          "temperatura_app": t_app, "umbral_app": umbral, "umbral_actual_sin_calibrar": con_07,
+         "umbral_elegido_sin_mirar_a_la_persona": anidado, "umbral_de_la_app_por_persona": app,
          "ece_sin": ece(P, Y), "ece_con": ece(PT, Y),
          "curva_sin_calibrar": curva_sin, "curva_calibrada": curva_con,
          "confiabilidad": {"sin": confiabilidad(P, Y), "con": confiabilidad(PT, Y)}}
@@ -141,8 +187,15 @@ def main():
     os.makedirs(salida, exist_ok=True)
     with open(os.path.join(salida, "resultados.json"), "w", encoding="utf-8") as f:
         json.dump(r, f, indent=2, ensure_ascii=False)
+    # Las predicciones, para rehacer el análisis sin reentrenar 9 modelos.
+    np.savez_compressed(os.path.join(salida, "predicciones.npz"), p=P, p_t=PT, y=Y, persona=PER, semilla=SEM,
+                        clases=np.array(d.clases))
+    # Lo que usa la app (assets/calibracion.json): "umbral" es el de la app, no el que sugiere
+    # el criterio. Antes este archivo decía 0,85 y la app usaba 0,75 (auditoría, X2).
     with open(os.path.join(ds.RAIZ, "resultados_calibracion", "calibracion_app.json"), "w", encoding="utf-8") as f:
-        json.dump({"temperatura": round(t_app, 4), "umbral": umbral["umbral"],
+        json.dump({"temperatura": round(t_app, 4), "umbral": args.umbral_app,
+                   "umbral_sugerido_por_el_criterio": umbral["umbral"],
+                   "acierto_objetivo_del_criterio": args.acierto_objetivo,
                    "origen": os.path.relpath(salida, ds.RAIZ).replace(os.sep, "/")}, f, indent=2)
 
     pct = lambda v: "—" if v is None else f"{100 * v:.1f}".replace(".", ",")  # noqa: E731
@@ -153,7 +206,16 @@ def main():
           f"y acierta el {pct(con_07['acierto_mostradas'])} % de lo mostrado.",
           f"- Umbral elegido (acierto objetivo {pct(args.acierto_objetivo)} %): **{umbral['umbral']:.2f}** sobre la "
           f"confianza calibrada: muestra el {pct(umbral['mostradas'])} % y acierta el "
-          f"{pct(umbral['acierto_mostradas'])} % de lo mostrado.", "",
+          f"{pct(umbral['acierto_mostradas'])} % de lo mostrado. **Optimista:** el umbral se eligió mirando "
+          "estas mismas predicciones.",
+          f"- Sin mirar a la persona (umbral elegido con las otras dos, medido en ella): muestra el "
+          f"{pct(anidado['mostradas_media'])} % y acierta el {pct(anidado['acierto_media'])} % "
+          f"(entre personas: {pct(anidado['acierto_min'])}-{pct(anidado['acierto_max'])} %). Umbrales elegidos: "
+          f"{anidado['umbrales']}.",
+          f"- Umbral de la app ({args.umbral_app:.2f}), por persona: acierto de lo mostrado "
+          + ", ".join(f"{k} {pct(v['acierto_mostradas'])} % ({pct(v['mostradas'])} % mostrado)"
+                      for k, v in app["por_persona"].items())
+          + f"; media entre personas {pct(app['acierto_media'])} ± {pct(app['acierto_desvio'])}.", "",
           "| Umbral | Mostradas sin calibrar | Acierto | Mostradas calibrado | Acierto |", "|---|---|---|---|---|"]
     for a, b in zip(curva_sin, curva_con, strict=True):
         md.append(f"| {a['umbral']:.2f} | {pct(a['mostradas'])} | {pct(a['acierto_mostradas'])} "

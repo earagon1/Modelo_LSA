@@ -1,5 +1,8 @@
 {
   "temperatura": 1.2008,
-  "umbral": 0.85,
-  "origen": "resultados_calibracion/2026-10-16_lopo"
+  "umbral": 0.75,
+  "umbral_sugerido_por_el_criterio": 0.85,
+  "acierto_objetivo_del_criterio": 0.85,
+  "origen": "resultados_calibracion/2026-10-16_lopo",
+  "nota": "Lo que usa la app (assets/calibracion.json). La corrida 2026-11-10_lopo repitió el procedimiento para medir el umbral sin mirar a cada persona; dio T = 1,29 y sugirió 0,90 (el entrenamiento en GPU no es determinista). La app conserva T y umbral de la corrida original."
 }

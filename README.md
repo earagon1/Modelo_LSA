@@ -33,10 +33,22 @@ Este diseño permite capturar dependencias temporales y patrones gestuales, con 
 ---
 
 ## **Resultados y métricas**
-Durante las pruebas internas con un conjunto reducido de datos:
-- **Accuracy global:** ~90% en validación cruzada.
-- **F1-score macro:** ~88% (promedio por clase).
-- **Consistencia local:** Alta robustez ante variaciones menores de velocidad y ángulo.
+Validación v2 (`resultados_validacion_v2/2026-10-16_p1p2p3_5semillas/`): 1409 tomas de 13 clases
+(1091 de cámara web, 318 de teléfonos de tres personas), cinco semillas. Todas las cifras son
+sobre las 318 tomas de los teléfonos:
+
+| Esquema | Accuracy | F1 macro |
+|---|---|---|
+| **Persona no vista (LOPO)**: el uso real de la app | **67,3 %** ± 2,3 entre semillas (60,0-73,0 % entre personas) | 67,3 % |
+| Persona conocida, sesión nueva (sin la clase «nada»; `resultados_robustez/`) | 84,6 % | — |
+| Tomas mezcladas al azar (estratificado) | 81,4 % | 81,6 % |
+
+- El "~90 %" que figuraba antes salía de una validación vieja, con una sola persona y las tomas
+  mezcladas. No describe a una persona nueva.
+- El estratificado sobre **todas** las tomas da 94,3 %, porque las de la webcam se reconocen casi sin
+  error. La diferencia con LOPO sobre la misma población es de unos 14 puntos, no de 27.
+- La consistencia σ, la robustez por condición y la calibración están en `resultados_consistencia/`,
+  `resultados_robustez/` y `resultados_calibracion/`.
 
 Estas métricas se calculan con **accuracy, F1-score y matrices de confusión**, y se complementan con un análisis de estabilidad que mide la consistencia de predicciones frente a variaciones mínimas en los datos.
 
