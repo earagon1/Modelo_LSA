@@ -1,14 +1,29 @@
-gTTS==2.5.1
-keras==2.10.0
-mediapipe==0.10.11
-numpy==1.26.4
-opencv_contrib_python==4.9.0.80
-pandas==2.2.2
-pygame==2.5.2
+# Entorno con el que se corrió todo lo de la tesis (conda "tesis3", Python 3.10).
+# Versiones fijadas: TF 2.10 es la última con GPU nativa en Windows, y el export sin
+# Flex (lsa/export.py) está verificado con esta combinación.
+
+# Modelo y export a TFLite
 tensorflow==2.10.1
-Flask==3.0.2
+keras==2.10.0
 protobuf==3.19.6
+h5py==3.11.0
+numpy==1.26.4
+
+# Landmarks (extractor de referencia del contrato v2) y video
+mediapipe==0.10.11
+opencv_contrib_python==4.9.0.80
+
+# Datos de la webcam (.h5 de pandas) y análisis
+pandas==2.2.2
 tables==3.9.2
+scikit-learn==1.5.2
+scipy==1.14.1
+matplotlib==3.9.2
+
+# Demo de escritorio (text_to_speech.py)
 gTTS==2.5.1
 pygame==2.5.2
-PyQt5==5.15.9
+
+# Desarrollo
+pytest==9.1.1
+ruff==0.16.10
