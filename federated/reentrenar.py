@@ -49,6 +49,8 @@ sys.path.append(AQUI)
 import protocolo as pr  # noqa: E402
 from servidor import ultimo_paquete  # noqa: E402
 
+from lsa.contrato import FEATURES_VERSION  # noqa: E402
+
 CALIBRACION_APP = os.path.join(os.path.dirname(os.path.dirname(RAIZ)), "TraductorLSA", "app", "src", "main",
                                "assets", "calibracion.json")
 FRACCION_TEST = 0.15
@@ -184,6 +186,8 @@ def main():
                   "clases": clases, "senas_nuevas": clases[len(clases_vig):], "archivos": archivos,
                   "backbone_sha256": hashlib.sha256(tfl).hexdigest(), "cabeza_sha256": pr.sha_pesos(pesos),
                   "entrada": {"T": 15, "D": 126, "features": "contrato v2"},
+                  # La app la compara con la suya antes de traducir (auditoría, X3).
+                  "features_version": FEATURES_VERSION,
                   # Las tomas del test fijo salen de los teléfonos del piloto: las apps y los
                   # clientes emulados no las usan para entrenar ni las aportan.
                   "uuids_test": sorted(test_uuids),
