@@ -20,12 +20,17 @@ Android, validación y un módulo de aprendizaje federado (`federated/`).
   `export PATH="/c/Users/Evelin/anaconda3/envs/tesis3/Library/bin:$PATH"`
   En PowerShell: `$env:PATH = "C:\Users\Evelin\anaconda3\envs\tesis3\Library\bin;$env:PATH"`. Sin esto, TF corre en CPU sin avisar más que con un warning.
 - Si hay que instalar algo con `conda` en este env, hacerlo desde PowerShell: los scripts post-instalación son `.bat` y fallan desde bash.
-- **No instalar ni actualizar paquetes en `tesis3` sin preguntar.** `requirements.txt` está incompleto (faltan sklearn, matplotlib, scipy); el reemplazo es PY-D9.
+- **No instalar ni actualizar paquetes en `tesis3` sin preguntar.** `requirements.txt` refleja este entorno, con las versiones fijadas.
 - `constants.ROOT_PATH = os.getcwd()`: **todo se corre desde la raíz de este repo**.
 
 ## Comandos
 ```bash
 PY=C:/Users/Evelin/anaconda3/envs/tesis3/python.exe
+$PY -m pytest -q                            # la suite entera (unos 2 minutos; pasa sin los datos)
+$PY scripts/validar.py --etiqueta <nombre>  # validación por persona y por sesión (lento; resultados_validacion_v2/)
+$PY scripts/entrenar_final.py               # el modelo a publicar, en runs/<fecha>_final/ (no toca models/)
+$PY scripts/publicar_modelo.py --verificar  # revisa los assets que hoy tiene la app
+$PY scripts/robustez.py --rehacer <corrida> # recalcula los resúmenes de robustez sin entrenar
 $PY verify_dataset_mix.py                   # conteos por fuente y por clase (solo lee)
 $PY -m pytest tests/test_fedavg.py -q      # 11 tests de corrección del federado (también corren con la suite)
 $PY federated/verificar_export.py <json>    # valida un export del teléfono (solo lee)
@@ -43,7 +48,8 @@ $PY federated/cliente_emulado.py --servidor https://<ip>:8765 --persona P2 --ron
 - `frame_actions/<clase>/sample_<timestamp>/frame_NN.jpg`: 12 clases × 100 tomas, webcam, **una sola persona**.
 - `data/keypoints/<clase>.h5`: landmarks Holistic (`lh[63] ‖ rh[63]`); 1200 secuencias de 15 frames, con el 33 % de los frames vacíos (ver `plan/progreso.md`).
 - `models/`: `actions_15.keras`, `actions_15*.tflite` y `words.json` (el orden **es** el índice de salida).
-- El modelo publicado se entrenó **solo con la webcam**. No hay `lsa_samples.json` del teléfono en el repo.
+- `data/captura_E3/P1..P3/`: las tomas de los teléfonos (`lsa_samples_v2.jsonl` y `lsa_samples.json`), sesión 1 y sesión 2 (robustez). `data/landmarks/webcam_v2.jsonl`: la webcam re-extraída con el extractor de la app.
+- `runs/<fecha>_*/`: modelos entrenados y exportados. El publicado en la app sale de `runs/2026-10-16_final` (1409 tomas: 1091 de webcam y 318 de teléfonos, 13 clases); el original, entrenado solo con la webcam, está en `referencia/`.
 
 ## Lo que NO se hace (pierde datos o rompe el modelo)
 - **Nunca correr `normalize_samples.py`**: borra frames con `os.remove`.
@@ -51,14 +57,14 @@ $PY federated/cliente_emulado.py --servidor https://<ip>:8765 --persona P2 --ron
 - **`training_model.py` y `export_tflite.py` sobrescriben el modelo de producción** (`models/`), y `training_model.py` además **reescribe `models/words.json`** con las etiquetas que encuentre en `lsa_samples.json`. Respaldar `models/` antes.
 - **No usar `finetune_from_lsa_json.py`**: arma el label map alfabético y cruza las clases.
 - **No dejar la salida de `h5_to_json.py` como `lsa_samples.json`** en la raíz: duplica muestras entre train y val.
-- No borrar ni mover `resultados_*/` ni `federated/resultados_*`: son la evidencia de los informes actuales (dataset viejo de 920). Las corridas nuevas van a directorios nuevos.
+- No borrar ni mover `resultados_*/` ni `federated/resultados_*`: son la evidencia del informe. Las corridas nuevas van a directorios nuevos, y lo que cita el informe se regenera con `scripts/reporte_tesis.py`.
 - Antes de cualquier tarea que toque datos: nuevo respaldo en `D:\Respaldo-Tesis\<fecha>\` con su manifiesto.
 
 ## Convenciones
 - **Nombres de clases:** minúsculas, sin tildes, con espacio (`como estas`, `mi nombre es`, `por favor`). Tienen que coincidir: carpeta de `frame_actions/`, `.h5`, `models/words.json`, `TraductorLSA/app/src/main/assets/words.json`, `NOMBRES_PARA_MOSTRAR` (`DictionaryScreen.kt`) y `assets/dictionary/<id con _>.jpg`. Detalle en `ejecucion.txt`.
-- **Publicar un modelo en la app** = copiar `.tflite` + `words.json` **juntos** a `TraductorLSA/app/src/main/assets/`. Cuando exista, lo hace solo `scripts/publicar_modelo.py`.
+- **Publicar un modelo en la app** lo hace solo `scripts/publicar_modelo.py` (modelo, `words.json`, calibración y `modelo.json`, juntos). Nunca copiar los assets a mano. Cada publicación se anota en `plan/progreso.md`.
 - **Git:** commits directo a `master`, sin ramas, **sin `Co-Authored-By`**, en español y con el *por qué* en el cuerpo. Sin push salvo que lo pida.
 - Estilo: comentarios que explican el *por qué*; funciones puras y testeables; los scripts nuevos van en `scripts/` y la lógica, en el paquete `lsa/` (plan, §3.1).
 
 ## Contrato de features
-El contrato v2 vive en `contract/` (espejado con TraductorLSA, con un test de hash). Hasta que exista, la referencia es `plan/modelo_lsa.md` §1.4 y §2, más los hallazgos medidos en `plan/progreso.md`.
+El contrato v2 vive en `contract/` (`features_v2.md`, `federado_v1.json` y los fixtures de paridad) y se regenera acá (`scripts/generar_fixtures_paridad.py`, `scripts/generar_fixture_federado.py`). Después hay que copiar `contract/` entero a TraductorLSA: allá `tools/chequeo_contrato_espejo.py` compara las dos copias.

@@ -2,18 +2,16 @@
 
 Este proyecto forma parte de una tesina que desarrolla un **traductor móvil en tiempo real de Lengua de Señas Argentina (LSA) a texto y voz, y de voz a texto**, completamente funcional **sin conexión a Internet**, ejecutando todo el procesamiento localmente en Android mediante TensorFlow Lite.
 
-En esta parte del repositorio se encuentra el **pipeline de entrenamiento en Python**, que permite:
-- Capturar y preparar muestras de datos.
-- Entrenar el modelo LSTM con Keras/TensorFlow.
-- Exportar el modelo optimizado para dispositivos móviles.
+En este repositorio está el **pipeline en Python**: los datos, el entrenamiento, la validación, el export a TensorFlow Lite, la publicación del modelo en la app y el servidor del aprendizaje federado.
 
 ---
 
 ## **Resumen técnico**
-- **Captura de landmarks:** Se utiliza [MediaPipe](https://developers.google.com/mediapipe) para extraer los **42 puntos clave tridimensionales** de ambas manos, en secuencias de **15 frames** por seña.
-- **Entrenamiento:** Se usa una **red LSTM profunda** para clasificar las secuencias de landmarks y convertirlas en palabras.  
-- **Conversión:** El modelo entrenado se convierte a TensorFlow Lite (`.tflite`) para ser integrado en la aplicación Android desarrollada en Kotlin.
-- **Procesamiento local:** El modelo resultante permite inferencia en tiempo real **sin conexión a internet**, optimizado para ejecutarse en dispositivos móviles de gama media.
+- **Landmarks:** MediaPipe HandLandmarker, el mismo extractor que usa la app (`lsa/extractor.py`): 21 puntos tridimensionales por mano, las dos manos, en secuencias de **15 frames** por seña.
+- **Contrato de features** (`contract/`): la cuenta que convierte los landmarks en la entrada del modelo (`lsa/contrato.py`) es la misma que hace la app. La carpeta está espejada en los dos repositorios y un fixture verifica que Python y Kotlin den el mismo resultado.
+- **Modelo:** una red LSTM que clasifica cada secuencia en una de 13 clases (12 señas y «nada»).
+- **Export:** TensorFlow Lite con cuantización dinámica y **sin ops Flex**, para que la app no cargue el delegado Flex (`lsa/export.py`).
+- **Datos:** 1409 tomas, 1091 de cámara web (una persona) y 318 de teléfonos (tres personas). No están en el repositorio: `data/`, `frame_actions/` y `models/` están en `.gitignore`.
 
 ---
 
@@ -54,47 +52,47 @@ Estas métricas se calculan con **accuracy, F1-score y matrices de confusión**,
 
 ---
 
-## **Optimización para TensorFlow Lite**
-Para la integración en Android, el modelo se exporta en diferentes variantes:
-- **`actions_15_f32.tflite`** → Inferencia en `float32` (máxima precisión).  
-- **`actions_15_opt.tflite`** → Cuantización dinámica (pesos `int8`, E/S en `float32`), reduciendo el tamaño del modelo y mejorando la velocidad de inferencia.  
+## **Flujo actual**
+Todo se corre desde la raíz del repositorio. La lógica está en el paquete `lsa/` y los scripts, en `scripts/`.
 
-Estas optimizaciones permiten inferencia **en tiempo real**, incluso en dispositivos de gama media.
+| Paso | Comando | Qué deja |
+|---|---|---|
+| Validar | `python scripts/validar.py --etiqueta <nombre>` | `resultados_validacion_v2/<fecha>_<nombre>/`: acierto por esquema (persona no vista, sesión no vista, estratificado) |
+| Entrenar el modelo a publicar | `python scripts/entrenar_final.py` | `runs/<fecha>_final/`: `modelo.keras`, `actions_15_opt.tflite`, `words.json` y el fixture de paridad |
+| Calibrar | `python scripts/calibrar.py` | `resultados_calibracion/`: temperatura y umbral de confianza |
+| Publicar en la app | `python scripts/publicar_modelo.py --desde runs/<fecha>_final --calibracion resultados_calibracion/calibracion_app.json` | Los cuatro assets de la app, con su manifiesto `modelo.json` |
+| Revisar lo publicado | `python scripts/publicar_modelo.py --verificar` | — |
 
----
+`publicar_modelo.py` es el único camino para escribir los assets de la app: comprueba que el modelo, las etiquetas y la calibración correspondan entre sí antes de copiarlos.
 
-## **Scripts principales**
-- **`capture_samples.py`** → Captura muestras y las guarda en `frame_actions/`.
-- **`normalize_samples.py`** → Normaliza el número de frames en cada muestra.
-- **`create_keypoints.py`** → Genera los keypoints para el entrenamiento.
-- **`training_model.py`** → Entrena la red neuronal y guarda el modelo `.keras`.
-- **`export_tflite.py`** → Convierte el modelo a formato `.tflite` optimizado.
-- **`evaluate_model_tflite.py`** → Permite probar el modelo TFLite antes de integrarlo en Android.
-- **`main.py`** → Interfaz gráfica básica para usar el traductor desde PC.
+Otros análisis: `scripts/robustez.py` (condiciones adversas), `scripts/consistencia.py` (métrica σ) y `scripts/reporte_tesis.py`, que junta todo en `resultados_tesis/` para el informe.
 
-## **Scripts secundarios**
-- **`model.py`** → Define la arquitectura de la red neuronal.
-- **`constants.py`** → Configuración de rutas y parámetros del modelo.
-- **`helpers.py`** → Funciones auxiliares para captura y preprocesamiento.
+Tests: `python -m pytest` (la suite pasa en un clon limpio, sin los datos).
 
 ---
 
-## **Flujo para mejorar el modelo**
-1. Capturar nuevas muestras con `capture_samples.py`.
-2. Normalizar con `normalize_samples.py`.
-3. Generar keypoints con `create_keypoints.py`.
-4. Entrenar el modelo con `training_model.py`.
-5. Exportar el modelo a `.tflite` con `export_tflite.py`.
-6. Probar la inferencia con `evaluate_model_tflite.py`.
+## **Aprendizaje federado**
+`federated/` tiene dos cosas: los experimentos de FedAvg en simulación y el servidor que corre en una PC de la red local y coordina rondas con la app. Ver `federated/README.md`.
+
+---
+
+## **Scripts heredados (no usar para entrenar)**
+En la raíz quedan los scripts del primer pipeline, que trabajaba solo con la cámara web. Se conservan porque generaron los datos originales, pero **varios pisan o borran datos**:
+
+- `normalize_samples.py` borra frames de las tomas.
+- `create_keypoints.py` sobrescribe todos los `.h5`.
+- `training_model.py` y `export_tflite.py` sobrescriben `models/`, y el primero reescribe `words.json`.
+- `finetune_from_lsa_json.py` arma las etiquetas en orden alfabético y cruza las clases.
+
+`capture_samples.py` sigue sirviendo para grabar con la cámara web, y `model.py` define la arquitectura que usan los scripts nuevos. El detalle de qué no correr está en `CLAUDE.md`.
 
 ---
 
 ## **Tecnologías utilizadas**
-- Python 3.10+
-- TensorFlow / Keras
+- Python 3.10 (entorno fijado en `requirements.txt`)
+- TensorFlow 2.10 / Keras
 - MediaPipe
-- NumPy, OpenCV
-- TensorFlow Lite para exportación
+- NumPy, scikit-learn, OpenCV
 
 ## **Resultados del entrenamiento**
 https://youtu.be/lMqT3cidfIA

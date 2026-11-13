@@ -8,8 +8,8 @@ Escribe en runs/<fecha>_final/ (no toca models/):
   modelo.keras, actions_15_opt.tflite (dinámica, sin Flex), words.json,
   paridad_modelo.json (fixture para ModeloParidadTest de la app), entrenamiento.json
 
-Después se copian a la app `actions_15_opt.tflite` y `words.json` **juntos** (y el
-fixture a app/src/androidTest/assets/).
+Después se publica en la app con `scripts/publicar_modelo.py`, que es el único
+camino para escribir sus assets (el fixture va a app/src/androidTest/assets/).
 
 Uso, desde la raíz de modelo_LSA:
     python scripts/entrenar_final.py [--semilla 0] [--sin-nada]
