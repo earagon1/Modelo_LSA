@@ -2,6 +2,7 @@
 import json
 
 import numpy as np
+import pytest
 
 from lsa import robustez as rb
 
@@ -35,20 +36,57 @@ def test_deteccion_cuenta_ambas_solo_en_senas_de_dos_manos():
     assert rb.deteccion({"label": "hola", "frames": frames})["ambas"] is None
 
 
-def test_wilson_queda_en_cero_uno():
-    lo, hi = rb.wilson(12, 12)
-    assert 0.7 < lo < 1.0 and hi == 1.0
-    lo, hi = rb.wilson(0, 12)
-    assert lo == 0.0 and hi < 0.3
+def _pred(persona, toma, condicion, semilla, acierta):
+    return {"id": f"{persona}-{toma}", "persona": persona, "condicion": condicion, "semilla": semilla,
+            "y": 1, "pred": 1 if acierta else 0}
 
 
-def test_acierto_por_muestra_promedia_semillas():
-    preds = [{"id": "a", "y": 1, "pred": 1}, {"id": "a", "y": 1, "pred": 0}, {"id": "b", "y": 2, "pred": 2}]
-    assert rb.acierto_por_muestra(preds) == {"a": 0.5, "b": 1.0}
+def test_matrices_por_persona_son_tomas_por_semillas():
+    preds = [_pred("P1", 1, "cerca", 0, True), _pred("P1", 1, "cerca", 1, False),
+             _pred("P1", 2, "cerca", 0, True), _pred("P1", 2, "cerca", 1, True),
+             _pred("P2", 1, "cerca", 0, False), _pred("P2", 1, "cerca", 1, False),
+             _pred("P1", 3, "lejos", 0, True), _pred("P1", 3, "lejos", 1, True)]
+    m = rb.matrices_por_persona(preds, "cerca")
+    assert sorted(m) == ["P1", "P2"]
+    assert m["P1"].tolist() == [[1, 0], [1, 1]] and m["P2"].tolist() == [[0, 0]]
+    # A una toma le falta una semilla: es un error de la corrida y tiene que notarse.
+    with pytest.raises(KeyError):
+        rb.matrices_por_persona([*preds, _pred("P2", 2, "cerca", 0, True)], "cerca")
 
 
-def test_diferencia_bootstrap():
-    a = np.ones(30)
-    b = np.r_[np.ones(15), np.zeros(15)]
-    d, lo, hi = rb.diferencia_bootstrap(a, b, repeticiones=2000)
-    assert d == -0.5 and lo < -0.5 < hi < 0
+def test_acierto_con_ic_pesa_cada_toma_y_contiene_la_media():
+    m = {"P1": np.ones((30, 3)), "P2": np.r_[np.ones((5, 3)), np.zeros((5, 3))]}
+    media, lo, hi = rb.acierto_con_ic(m, repeticiones=2000)
+    assert media == pytest.approx(35 / 40)
+    assert lo < media < hi <= 1.0
+    # Sin variación no hay intervalo: todas las tomas y semillas aciertan.
+    assert rb.acierto_con_ic({"P1": np.ones((12, 5))}, repeticiones=200) == (1.0, 1.0, 1.0)
+
+
+def test_el_ic_cuenta_la_variacion_entre_semillas():
+    # Cada semilla acierta todo o nada: remuestrear solo las tomas daría un intervalo
+    # de ancho cero alrededor de 0,6, como si el modelo fuera uno solo (ML-M3).
+    m = {"P1": np.tile(np.array([1.0, 1.0, 1.0, 0.0, 0.0]), (12, 1))}
+    media, lo, hi = rb.acierto_con_ic(m, repeticiones=2000)
+    assert media == pytest.approx(0.6) and lo < 0.25 and hi == 1.0
+
+
+def test_la_caida_se_mide_contra_el_estandar_de_las_mismas_personas():
+    # P1 acierta 50 % en estándar y P2 100 %. La condición la grabó solo P1, sin caer:
+    # contra el estándar de los dos daría -25 puntos que no son de la condición (ML-M6).
+    ref = {"P1": np.r_[np.ones((10, 2)), np.zeros((10, 2))], "P2": np.ones((20, 2))}
+    cond = {"P1": np.r_[np.ones((6, 2)), np.zeros((6, 2))]}
+    c = rb.caida_pareada(ref, cond, repeticiones=2000)
+    assert c["caida"] == pytest.approx(0.0) and c["referencia"] == pytest.approx(0.5)
+    assert c["por_persona"] == {"P1": pytest.approx(0.0)}
+    assert c["ic95"][0] < 0 < c["ic95"][1]
+
+
+def test_la_caida_promedia_personas_no_tomas():
+    ref = {"P1": np.ones((10, 1)), "P2": np.ones((10, 1))}
+    cond = {"P1": np.ones((12, 1)), "P2": np.zeros((4, 1))}  # P2 cae entero, con menos tomas
+    c = rb.caida_pareada(ref, cond, repeticiones=500)
+    assert c["por_persona"] == {"P1": 0.0, "P2": -1.0} and c["caida"] == -0.5
+    assert c["ic95"] == (-0.5, -0.5)
+    # Una persona sin referencia no entra; sin ninguna, no hay caída que informar.
+    assert rb.caida_pareada(ref, {"P9": np.ones((3, 1))}) is None

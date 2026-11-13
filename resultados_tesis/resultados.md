@@ -129,35 +129,37 @@ Modelo global 65,7 % → personalizado con su tanda 1 66,7 % (mejora media 0,9 p
 
 ## 7. Calibración y umbral de la app
 
-Fuente: `resultados_calibracion\2026-10-16_lopo`.
+Fuente: `resultados_calibracion\2026-11-10_lopo`.
 
 Datos: 1409 muestras, 13 clases | persona: {'P1': 1197, 'P2': 106, 'P3': 106} | fuente: {'telefono': 318, 'webcam': 1091} | excluidas: {'pocos_frames': 109}. Semillas: [0, 1, 2].
 
-- Temperatura para la app (mediana de 9 pliegues): **T = 1.20**
-- ECE: 17,1 % sin calibrar → 12,7 % calibrado
-- Con el umbral actual de la app (0,70, sin calibrar): se muestra el 69,1 % y acierta el 77,5 % de lo mostrado.
-- Umbral elegido (acierto objetivo 85,0 %): **0.85** sobre la confianza calibrada: muestra el 49,7 % y acierta el 87,1 % de lo mostrado.
+- Temperatura para la app (mediana de 9 pliegues): **T = 1.29**
+- ECE: 18,6 % sin calibrar → 13,8 % calibrado
+- Con el umbral actual de la app (0,70, sin calibrar): se muestra el 70,9 % y acierta el 77,1 % de lo mostrado.
+- Umbral elegido (acierto objetivo 85,0 %): **0.90** sobre la confianza calibrada: muestra el 43,0 % y acierta el 87,1 % de lo mostrado. **Optimista:** el umbral se eligió mirando estas mismas predicciones.
+- Sin mirar a la persona (umbral elegido con las otras dos, medido en ella): muestra el 45,9 % y acierta el 83,5 % (entre personas: 75,9-93,1 %). Umbrales elegidos: {'P1': 0.8, 'P2': 0.85, 'P3': 0.95}.
+- Umbral de la app (0.75), por persona: acierto de lo mostrado P1 72,7 % (40,3 % mostrado), P2 81,0 % (72,6 % mostrado), P3 86,9 % (69,5 % mostrado); media entre personas 80,2 ± 7,1.
 
 | Umbral | Mostradas sin calibrar | Acierto | Mostradas calibrado | Acierto |
 |---|---|---|---|---|
-| 0.30 | 91,5 | 67,4 | 91,2 | 67,5 |
-| 0.35 | 90,5 | 67,9 | 89,7 | 68,2 |
-| 0.40 | 89,5 | 68,4 | 88,6 | 68,5 |
-| 0.45 | 88,3 | 68,8 | 86,3 | 69,6 |
-| 0.50 | 86,1 | 70,2 | 81,7 | 72,5 |
-| 0.55 | 81,7 | 72,7 | 76,5 | 74,0 |
-| 0.60 | 77,0 | 74,0 | 71,8 | 76,4 |
-| 0.65 | 72,7 | 75,9 | 66,7 | 78,6 |
-| 0.70 | 69,1 | 77,5 | 62,9 | 80,8 |
-| 0.75 | 65,3 | 80,1 | 59,6 | 83,0 |
-| 0.80 | 62,4 | 81,3 | 55,7 | 84,4 |
-| 0.85 | 57,9 | 83,2 | 49,7 | 87,1 |
-| 0.90 | 52,1 | 85,7 | 44,1 | 88,8 |
-| 0.95 | 43,3 | 87,9 | 32,9 | 89,2 |
+| 0.30 | 93,4 | 66,8 | 93,3 | 66,9 |
+| 0.35 | 93,2 | 66,9 | 92,5 | 67,1 |
+| 0.40 | 92,7 | 67,1 | 91,8 | 67,2 |
+| 0.45 | 91,3 | 67,0 | 89,5 | 67,7 |
+| 0.50 | 89,6 | 67,5 | 85,7 | 68,5 |
+| 0.55 | 85,0 | 69,2 | 79,2 | 71,8 |
+| 0.60 | 78,8 | 72,5 | 73,2 | 75,6 |
+| 0.65 | 74,8 | 75,4 | 68,2 | 78,8 |
+| 0.70 | 70,9 | 77,1 | 64,9 | 80,0 |
+| 0.75 | 66,7 | 79,4 | 60,8 | 81,4 |
+| 0.80 | 63,8 | 80,6 | 56,7 | 83,2 |
+| 0.85 | 59,9 | 82,1 | 51,7 | 85,0 |
+| 0.90 | 54,1 | 83,7 | 43,0 | 87,1 |
+| 0.95 | 43,7 | 87,5 | 27,7 | 91,3 |
 
 ## 8. Robustez por condición (sesión 2)
 
-Fuente: `resultados_robustez\2026-10-17_p1p2p3_5semillas`.
+Fuente: `resultados_robustez\2026-11-12_p1p2p3_5semillas_pareado`.
 
 Generado por `scripts/robustez.py`. No editar a mano. Semillas: [0, 1, 2, 3, 4].
 
@@ -165,7 +167,11 @@ Entrenamiento: 1409 muestras, 13 clases | persona: {'P1': 1197, 'P2': 106, 'P3':
 
 Sesión 2: 131 muestras, 13 clases | persona: {'P1': 48, 'P2': 47, 'P3': 36} | fuente: {'telefono': 131}.
 
-Cada condición se mide con el mismo modelo que su referencia estándar. El IC 95 % es de Wilson sobre las tomas (cada toma promedia sus semillas); la caída tiene IC por bootstrap. Con 12 tomas por persona y condición los intervalos son anchos: las diferencias chicas no son concluyentes.
+Cada condición se mide con el mismo modelo que su referencia estándar. La caída se calcula persona por persona, contra el estándar de esa misma persona, y se promedia entre las personas que tienen la condición (no todas las condiciones tienen a las tres). Los IC 95 % son por bootstrap de las tomas dentro de cada persona y de las semillas (10 000 remuestreos).
+
+Los intervalos valen para estas personas: con tres o menos no se puede estimar cuánto cambia el resultado de una persona a otra, y por eso cada tabla muestra a cada persona por separado. Con 12 tomas por persona y condición los intervalos son anchos: las diferencias chicas no son concluyentes.
+
+Recalculado desde las predicciones de `resultados_robustez/2026-10-17_p1p2p3_5semillas`, sin volver a entrenar.
 
 Correcciones aplicadas (de `correcciones_sesion2.json`): P3 órdenes 107–118 → lejos + poca luz. P3 no tiene «girado 30°» (descartada en la grabación) y a P2 le falta «por favor» a 30°.
 
@@ -175,27 +181,27 @@ Correcciones aplicadas (de `correcciones_sesion2.json`): P3 órdenes 107–118 �
 
 Entrena sin la persona evaluada. Estándar = sus tomas de la sesión 1.
 
-| Condición | Tomas | Acierto (%) | IC 95 % | Caída vs estándar (pts, IC 95 %) | P1 | P2 | P3 | Confusión más común |
+| Condición | Tomas | Acierto (%) | IC 95 % | Caída vs estándar de las mismas personas (pts, IC 95 %) | P1: acierto (caída) | P2: acierto (caída) | P3: acierto (caída) | Confusión más común |
 |---|---|---|---|---|---|---|---|---|
-| estándar | 288 | 69,8 ± 4,1 | 64,3–74,8 | referencia | 60,6 | 73,1 | 75,6 | nada |
-| poca luz | 36 | 60,0 ± 7,2 | 43,8–74,3 | -9,8 (-22,9 a +3,4) | 56,7 | 61,7 | 61,7 | nada |
-| cerca | 36 | 62,2 ± 5,8 | 45,9–76,1 | -7,6 (-23,1 a +7,2) | 48,3 | 83,3 | 55,0 | v |
-| lejos | 24 | 57,5 ± 9,0 | 38,1–74,9 | -12,3 (-27,6 a +3,1) | 63,3 | 51,7 | — | nada |
-| lejos + poca luz | 12 | 61,7 ± 4,6 | 34,7–82,9 | -8,1 (-29,9 a +11,7) | — | — | 61,7 | por favor |
-| girado 30° | 23 | 42,6 ± 3,6 | 24,9–62,4 | -27,2 (-44,5 a -9,1) | 61,7 | 21,8 | — | nada |
+| estándar | 288 | 69,8 ± 4,1 | 64,1–75,3 | referencia | 60,6 | 73,1 | 75,6 | nada |
+| poca luz | 36 | 60,0 ± 7,2 | 45,6–73,9 | -9,8 (-24,2 a +4,3), ref. 69,8 | 56,7 (-4,0) | 61,7 (-11,5) | 61,7 (-14,0) | nada |
+| cerca | 36 | 62,2 ± 5,8 | 47,8–76,1 | -7,6 (-22,5 a +6,7), ref. 69,8 | 48,3 (-12,3) | 83,3 (+10,2) | 55,0 (-20,6) | v |
+| lejos | 24 | 57,5 ± 9,0 | 40,0–73,3 | -9,4 (-25,9 a +6,9), ref. 66,9 | 63,3 (+2,7) | 51,7 (-21,5) | — | nada |
+| lejos + poca luz | 12 | 61,7 ± 4,6 | 38,3–83,3 | -14,0 (-38,3 a +9,6), ref. 75,6 | — | — | 61,7 (-14,0) | por favor |
+| girado 30° | 23 | 42,6 ± 3,6 | 26,1–59,1 | -25,1 (-42,9 a -7,6), ref. 66,9 | 61,7 (+1,0) | 21,8 (-51,3) | — | nada |
 
 ### Persona conocida, sesión nueva
 
 Entrena con todo menos la tanda 2 de la persona. Estándar = esa tanda 2.
 
-| Condición | Tomas | Acierto (%) | IC 95 % | Caída vs estándar (pts, IC 95 %) | P1 | P2 | P3 | Confusión más común |
+| Condición | Tomas | Acierto (%) | IC 95 % | Caída vs estándar de las mismas personas (pts, IC 95 %) | P1: acierto (caída) | P2: acierto (caída) | P3: acierto (caída) | Confusión más común |
 |---|---|---|---|---|---|---|---|---|
-| estándar | 144 | 84,6 ± 4,1 | 77,8–89,6 | referencia | 89,6 | 83,8 | 80,4 | bien |
-| poca luz | 36 | 75,0 ± 5,2 | 58,9–86,2 | -9,6 (-21,7 a +1,9) | 85,0 | 70,0 | 70,0 | bien |
-| cerca | 36 | 78,9 ± 3,7 | 63,1–89,1 | -5,7 (-18,2 a +6,0) | 86,7 | 90,0 | 60,0 | nada |
-| lejos | 24 | 68,3 ± 4,8 | 48,3–83,3 | -16,3 (-32,1 a -0,8) | 75,0 | 61,7 | — | bien |
-| lejos + poca luz | 12 | 73,3 ± 10,9 | 45,2–90,2 | -11,3 (-32,1 a +7,2) | — | — | 73,3 | por favor |
-| girado 30° | 23 | 53,9 ± 6,6 | 34,5–72,2 | -30,7 (-48,0 a -12,9) | 76,7 | 29,1 | — | nada |
+| estándar | 144 | 84,6 ± 4,1 | 78,3–90,6 | referencia | 89,6 | 83,8 | 80,4 | bien |
+| poca luz | 36 | 75,0 ± 5,2 | 62,8–86,1 | -9,6 (-23,2 a +3,1), ref. 84,6 | 85,0 (-4,6) | 70,0 (-13,8) | 70,0 (-10,4) | bien |
+| cerca | 36 | 78,9 ± 3,7 | 67,2–89,4 | -5,7 (-19,0 a +6,5), ref. 84,6 | 86,7 (-2,9) | 90,0 (+6,2) | 60,0 (-20,4) | nada |
+| lejos | 24 | 68,3 ± 4,8 | 51,7–83,3 | -18,3 (-35,6 a -2,3), ref. 86,7 | 75,0 (-14,6) | 61,7 (-22,1) | — | bien |
+| lejos + poca luz | 12 | 73,3 ± 10,9 | 50,0–93,3 | -7,1 (-34,6 a +17,5), ref. 80,4 | — | — | 73,3 (-7,1) | bien |
+| girado 30° | 23 | 53,9 ± 6,6 | 38,3–69,6 | -33,8 (-50,5 a -17,4), ref. 86,7 | 76,7 (-12,9) | 29,1 (-54,7) | — | nada |
 
 ### La app en vivo
 
@@ -245,9 +251,9 @@ Condición & \multicolumn{2}{c}{Persona no vista} & \multicolumn{2}{c}{Persona c
 estándar & 69,8 & ref. & 84,6 & ref. & 58,4 \\
 poca luz & 60,0 & -9,8 & 75,0 & -9,6 & 70,0 \\
 cerca & 62,2 & -7,6 & 78,9 & -5,7 & 53,9 \\
-lejos & 57,5 & -12,3 & 68,3 & -16,3 & 17,5 \\
-lejos + poca luz & 61,7 & -8,1 & 73,3 & -11,3 & 55,0 \\
-girado 30° & 42,6 & -27,2 & 53,9 & -30,7 & 21,1 \\
+lejos & 57,5 & -9,4 & 68,3 & -18,3 & 17,5 \\
+lejos + poca luz & 61,7 & -14,0 & 73,3 & -7,1 & 55,0 \\
+girado 30° & 42,6 & -25,1 & 53,9 & -33,8 & 21,1 \\
 \bottomrule
 \end{tabular}
 ```

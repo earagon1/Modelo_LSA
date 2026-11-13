@@ -5,11 +5,22 @@ girado 30°, cerca y lejos). Acá viven las piezas puras del análisis, separada
 entrenamiento para poder testearlas: el nombre de cada condición, las correcciones
 anotadas durante la grabación, las medidas de detección de manos por toma y los
 resúmenes con intervalo de confianza.
+
+Sobre los intervalos (auditoría, ML-M3 y ML-M6). Cada condición tiene 12 tomas de una,
+dos o tres personas, y no todas las condiciones tienen a las tres. Por eso:
+
+  - La caída de una condición se calcula persona por persona, contra el estándar de
+    esa misma persona, y se promedia entre las personas que tienen la condición. Restar
+    contra el estándar de las tres mezclaba el efecto de la condición con el de quién
+    la grabó (ML-M6).
+  - El intervalo remuestrea las tomas dentro de cada persona y también las semillas,
+    porque el modelo de cada semilla es otra fuente de variación (ML-M3). Es un
+    intervalo para ESTAS personas: con tres o menos no se puede estimar cuánto cambia
+    el resultado de una persona a otra, y eso se informa aparte, persona por persona.
 """
 from __future__ import annotations
 
 import json
-import math
 from collections.abc import Iterable
 
 import numpy as np
@@ -76,36 +87,64 @@ def deteccion(muestra: dict) -> dict:
             "ambas": ambas if muestra["label"] in DOS_MANOS else None, "fps": float(muestra.get("fps", 0.0))}
 
 
-def wilson(aciertos: float, n: int, z: float = 1.96) -> tuple[float, float]:
-    """Intervalo de Wilson al 95 % para una proporción. Con 12 tomas por persona y
-    condición, el intervalo normal se sale de [0, 1]; Wilson no."""
-    if n == 0:
-        return (math.nan, math.nan)
-    p = aciertos / n
-    centro = (p + z * z / (2 * n)) / (1 + z * z / n)
-    radio = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / (1 + z * z / n)
-    return (max(0.0, centro - radio), min(1.0, centro + radio))
 
-
-def acierto_por_muestra(predicciones: Iterable[dict]) -> dict[str, float]:
-    """Por toma (clave `id`), la fracción de semillas que la acertó. Cada toma pesa lo
-    mismo aunque haya varias semillas: el n del intervalo es el de tomas, no el de
-    tomas × semillas."""
-    suma: dict[str, list[int]] = {}
+def matrices_por_persona(predicciones: Iterable[dict], condicion: str) -> dict[str, np.ndarray]:
+    """Los aciertos de una condición, por persona: una matriz tomas × semillas de 0 y 1.
+    Todas las tomas tienen que estar en todas las semillas (si falta una, es un error
+    de la corrida y conviene que se note)."""
+    por: dict[str, dict[str, dict[int, int]]] = {}
     for p in predicciones:
-        suma.setdefault(p["id"], []).append(int(p["y"] == p["pred"]))
-    return {k: float(np.mean(v)) for k, v in suma.items()}
+        if p["condicion"] == condicion:
+            por.setdefault(p["persona"], {}).setdefault(p["id"], {})[p["semilla"]] = int(p["y"] == p["pred"])
+    out = {}
+    for persona, tomas in por.items():
+        semillas = sorted({s for t in tomas.values() for s in t})
+        out[persona] = np.array([[t[s] for s in semillas] for _, t in sorted(tomas.items())], dtype=float)
+    return out
 
 
-def diferencia_bootstrap(a: np.ndarray, b: np.ndarray, repeticiones: int = 10000,
-                         semilla: int = 0) -> tuple[float, float, float]:
-    """Diferencia de acierto medio b - a con IC 95 % por bootstrap sobre las tomas.
-    Las dos muestras son tomas distintas (no pareadas), así que se remuestrea cada una
-    por separado."""
+def _medias(m: np.ndarray, rng: np.random.Generator, semillas: np.ndarray) -> np.ndarray:
+    """Una media por remuestreo: tomas elegidas con reposición, con las semillas dadas."""
+    filas = rng.integers(0, len(m), (len(semillas), len(m)))
+    return m[filas[:, :, None], semillas[:, None, :]].mean((1, 2))
+
+
+def _semillas(matrices: Iterable[np.ndarray], rng: np.random.Generator, repeticiones: int) -> np.ndarray:
+    n = {m.shape[1] for m in matrices}
+    if len(n) != 1:
+        raise ValueError(f"las matrices tienen distinta cantidad de semillas: {sorted(n)}")
+    s = n.pop()
+    return rng.integers(0, s, (repeticiones, s))
+
+
+def acierto_con_ic(por_persona: dict[str, np.ndarray], repeticiones: int = 10000,
+                   semilla: int = 0) -> tuple[float, float, float]:
+    """Acierto de una condición (cada toma pesa lo mismo) con su IC 95 %: bootstrap de
+    las tomas dentro de cada persona y de las semillas."""
+    total = sum(len(m) for m in por_persona.values())
+    media = sum(m.mean() * len(m) for m in por_persona.values()) / total
     rng = np.random.default_rng(semilla)
-    if len(a) == 0 or len(b) == 0:
-        return (math.nan, math.nan, math.nan)
-    ia = rng.integers(0, len(a), (repeticiones, len(a)))
-    ib = rng.integers(0, len(b), (repeticiones, len(b)))
-    d = b[ib].mean(1) - a[ia].mean(1)
-    return (float(b.mean() - a.mean()), float(np.percentile(d, 2.5)), float(np.percentile(d, 97.5)))
+    sem = _semillas(por_persona.values(), rng, repeticiones)
+    boot = sum(len(m) * _medias(m, rng, sem) for _, m in sorted(por_persona.items())) / total
+    return (float(media), float(np.percentile(boot, 2.5)), float(np.percentile(boot, 97.5)))
+
+
+def caida_pareada(ref: dict[str, np.ndarray], cond: dict[str, np.ndarray], repeticiones: int = 10000,
+                  semilla: int = 0) -> dict | None:
+    """Cuánto cae una condición respecto del estándar, persona por persona.
+
+    Para cada persona que tiene la condición: su acierto en la condición menos su
+    acierto estándar, con el mismo modelo. La caída es el promedio de esas diferencias
+    (cada persona pesa lo mismo). Las semillas se remuestrean juntas para la
+    referencia y la condición, porque es el mismo modelo el que evalúa las dos."""
+    personas = sorted(p for p in cond if p in ref)
+    if not personas:
+        return None
+    por_persona = {p: float(cond[p].mean() - ref[p].mean()) for p in personas}
+    rng = np.random.default_rng(semilla)
+    sem = _semillas([m for p in personas for m in (ref[p], cond[p])], rng, repeticiones)
+    boot = sum(_medias(cond[p], rng, sem) - _medias(ref[p], rng, sem) for p in personas) / len(personas)
+    return {"caida": float(np.mean(list(por_persona.values()))),
+            "ic95": (float(np.percentile(boot, 2.5)), float(np.percentile(boot, 97.5))),
+            "referencia": float(np.mean([ref[p].mean() for p in personas])),
+            "por_persona": por_persona}

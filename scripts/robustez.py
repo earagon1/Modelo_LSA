@@ -150,28 +150,22 @@ def esquema_app(b, cond_b):
 
 
 def resumir(preds, clases):
-    """Por condición (y por persona dentro de cada una): acierto medio entre semillas,
-    IC de Wilson sobre las tomas y caída respecto de la referencia estándar."""
-    por_muestra = rb.acierto_por_muestra(preds)
-    info = {p["id"]: p for p in preds}
+    """Por condición (y por persona dentro de cada una): acierto con su IC y caída
+    respecto del estándar de las mismas personas (ver lsa/robustez.py)."""
     conds = [c for c in rb.CONDICIONES if any(p["condicion"] == c for p in preds)]
-    ref = np.array([v for k, v in por_muestra.items() if info[k]["condicion"] == rb.ESTANDAR])
+    dispositivo = {p["persona"]: p["dispositivo"] for p in preds}
+    ref = rb.matrices_por_persona(preds, rb.ESTANDAR)
     out = {"condiciones": {}}
     for c in conds:
-        ks = [k for k in por_muestra if info[k]["condicion"] == c]
-        v = np.array([por_muestra[k] for k in ks])
-        semillas = sorted({p["semilla"] for p in preds})
-        por_sem = [np.mean([p["y"] == p["pred"] for p in preds if p["condicion"] == c and p["semilla"] == s])
-                   for s in semillas]
-        r = {"n": len(ks), "acierto": float(v.mean()), "ic95": rb.wilson(v.sum(), len(v)),
-             "desvio_semillas": float(np.std(por_sem, ddof=1)) if len(por_sem) > 1 else 0.0, "por_persona": {}}
-        if c != rb.ESTANDAR and len(ref):
-            r["caida_vs_estandar"] = rb.diferencia_bootstrap(ref, v)
-        for persona in sorted({info[k]["persona"] for k in ks}):
-            vp = np.array([por_muestra[k] for k in ks if info[k]["persona"] == persona])
-            r["por_persona"][persona] = {"n": len(vp), "acierto": float(vp.mean()),
-                                         "dispositivo": next(info[k]["dispositivo"] for k in ks
-                                                             if info[k]["persona"] == persona)}
+        m = rb.matrices_por_persona(preds, c)
+        acierto, lo, hi = rb.acierto_con_ic(m)
+        por_sem = np.concatenate(list(m.values())).mean(0)
+        r = {"n": int(sum(len(x) for x in m.values())), "acierto": acierto, "ic95": (lo, hi),
+             "desvio_semillas": float(np.std(por_sem, ddof=1)) if len(por_sem) > 1 else 0.0,
+             "por_persona": {p: {"n": len(x), "acierto": float(x.mean()), "dispositivo": dispositivo[p]}
+                             for p, x in sorted(m.items())}}
+        if c != rb.ESTANDAR and ref:
+            r["caida_vs_estandar"] = rb.caida_pareada(ref, m)
         # Con qué se confunde: la predicción más frecuente cuando se equivoca.
         errores = [clases[p["pred"]] for p in preds if p["condicion"] == c and p["pred"] != p["y"]]
         r["confusion_mas_comun"] = max(set(errores), key=errores.count) if errores else None
@@ -220,16 +214,37 @@ def tabla_md(res, esquema, titulo, que):
     r = res["esquemas"][esquema]["condiciones"]
     personas = sorted({p for c in r.values() for p in c["por_persona"]})
     md = [f"### {titulo}", "", que, "",
-          "| Condición | Tomas | Acierto (%) | IC 95 % | Caída vs estándar (pts, IC 95 %) | "
-          + " | ".join(personas) + " | Confusión más común |",
+          "| Condición | Tomas | Acierto (%) | IC 95 % | Caída vs estándar de las mismas personas (pts, IC 95 %) | "
+          + " | ".join(f"{p}: acierto (caída)" for p in personas) + " | Confusión más común |",
           "|---|---|---|---|---|" + "---|" * len(personas) + "---|"]
     for c, v in r.items():
         caida = v.get("caida_vs_estandar")
-        txt_caida = (f"{puntos(caida[0])} ({puntos(caida[1])} a {puntos(caida[2])})" if caida else "referencia")
-        pp = " | ".join(pct(v["por_persona"][p]["acierto"]) if p in v["por_persona"] else "—" for p in personas)
+        txt_caida = (f"{puntos(caida['caida'])} ({puntos(caida['ic95'][0])} a {puntos(caida['ic95'][1])}), "
+                     f"ref. {pct(caida['referencia'])}" if caida else "referencia")
+        pp = " | ".join(
+            (pct(v["por_persona"][p]["acierto"])
+             + (f" ({puntos(caida['por_persona'][p])})" if caida and p in caida["por_persona"] else ""))
+            if p in v["por_persona"] else "—" for p in personas)
         md.append(f"| {c} | {v['n']} | {pct(v['acierto'])} ± {pct(v['desvio_semillas'])} | "
                   f"{pct(v['ic95'][0])}–{pct(v['ic95'][1])} | {txt_caida} | {pp} | {v['confusion_mas_comun'] or '—'} |")
     return md
+
+
+def rehacer(origen, etiqueta):
+    """Recalcula los resúmenes desde las predicciones guardadas de una corrida, sin
+    entrenar: las cuentas de los intervalos y de las caídas cambiaron (ML-M3, ML-M6),
+    las predicciones no. Escribe en una carpeta nueva; la corrida original no se toca."""
+    with open(os.path.join(origen, "resultados.json"), encoding="utf-8") as f:
+        res = json.load(f)
+    for esquema, preds in res["predicciones"].items():
+        res["esquemas"][esquema] = resumir(preds, res["clases"])
+    res["rehecho_desde"] = os.path.relpath(origen, RAIZ).replace(os.sep, "/")
+    salida = os.path.join(RAIZ, "resultados_robustez", f"{date.today().isoformat()}_{etiqueta}")
+    os.makedirs(salida, exist_ok=True)
+    with open(os.path.join(salida, "resultados.json"), "w", encoding="utf-8") as f:
+        json.dump(res, f, indent=1, ensure_ascii=False)
+    escribir_resumen(res, salida)
+    print(f"-> {salida}")
 
 
 def main():
@@ -238,7 +253,11 @@ def main():
     ap.add_argument("--semillas", nargs="+", type=int, default=[0, 1, 2, 3, 4])
     ap.add_argument("--epocas", type=int, default=300)
     ap.add_argument("--etiqueta", default="run")
+    ap.add_argument("--rehacer", metavar="CARPETA",
+                    help="recalcula los resúmenes desde el resultados.json de esa corrida, sin entrenar")
     args = ap.parse_args()
+    if args.rehacer:
+        return rehacer(args.rehacer, args.etiqueta)
 
     import tensorflow as tf
     for gpu in tf.config.list_physical_devices("GPU"):
@@ -279,9 +298,15 @@ def escribir_resumen(res, salida):
     md = ["# Robustez por condición (sesión 2)", "",
           f"Generado por `scripts/robustez.py`. No editar a mano. Semillas: {res['semillas']}.", "",
           f"Entrenamiento: {res['datos']}.", "", f"Sesión 2: {res['sesion2']}.", "",
-          "Cada condición se mide con el mismo modelo que su referencia estándar. El IC 95 % es de Wilson "
-          "sobre las tomas (cada toma promedia sus semillas); la caída tiene IC por bootstrap. Con 12 tomas "
-          "por persona y condición los intervalos son anchos: las diferencias chicas no son concluyentes.", ""]
+          "Cada condición se mide con el mismo modelo que su referencia estándar. La caída se calcula persona "
+          "por persona, contra el estándar de esa misma persona, y se promedia entre las personas que tienen "
+          "la condición (no todas las condiciones tienen a las tres). Los IC 95 % son por bootstrap de las "
+          "tomas dentro de cada persona y de las semillas (10 000 remuestreos).", "",
+          "Los intervalos valen para estas personas: con tres o menos no se puede estimar cuánto cambia el "
+          "resultado de una persona a otra, y por eso cada tabla muestra a cada persona por separado. Con 12 "
+          "tomas por persona y condición los intervalos son anchos: las diferencias chicas no son concluyentes.", ""]
+    if res.get("rehecho_desde"):
+        md += [f"Recalculado desde las predicciones de `{res['rehecho_desde']}`, sin volver a entrenar.", ""]
     if res["correcciones"]:
         md += ["Correcciones aplicadas (de `correcciones_sesion2.json`): " + "; ".join(
             f"{p} órdenes {a}–{z} → {rb.nombre_condicion(c)}" for p, v in res["correcciones"].items()
@@ -352,7 +377,7 @@ def tabla_tex(res):
                 celdas += ["—", "—"]
                 continue
             caida = v.get("caida_vs_estandar")
-            celdas += [pct(v["acierto"]), puntos(caida[0]) if caida else "ref."]
+            celdas += [pct(v["acierto"]), puntos(caida["caida"]) if caida else "ref."]
         det = res["deteccion"].get(c, {}).get("ambas_en_senas_de_dos_manos")
         tex.append(f"{c} & " + " & ".join(celdas) + f" & {pct(det)}" + r" \\")
     tex += [r"\bottomrule", r"\end{tabular}"]
