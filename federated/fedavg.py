@@ -15,7 +15,7 @@ Lo unico que viaja son los pesos: los datos de cada cliente no salen nunca de
 su particion. Esa es toda la propiedad que el enfoque promete.
 
 `aggregate` esta escrita como funcion pura sobre listas de arrays justamente
-para poder testearla sin entrenar nada (ver `test_fedavg.py`).
+para poder testearla sin entrenar nada (ver `tests/test_fedavg.py`).
 """
 
 from __future__ import annotations
@@ -74,7 +74,7 @@ def reset_optimizer_state(modelo: tf.keras.Model) -> None:
     En FedAvg cada cliente es stateless entre rondas: recibe pesos, entrena
     desde cero en lo que a estado del optimizador respecta, y devuelve pesos.
 
-    Este comportamiento lo verifica `test_identidad_un_cliente_equivale_a_centralizado`.
+    Este comportamiento lo verifican `tests/test_fedavg.py::test_el_optimizador_no_arrastra_estado_entre_clientes` y el test de identidad.
     """
     opt = getattr(modelo, "optimizer", None)
     if opt is None:

@@ -3,10 +3,24 @@ import itertools
 import json
 
 import numpy as np
+import pytest
 
 from lsa import dataset as ds
 
 _ids = itertools.count()
+
+# El orden real de las clases vive en models/words.json, que está gitignoreado (lo
+# escribe el entrenamiento). Estos tests prueban cómo se arma el dataset, no qué señas
+# tiene el modelo publicado: con un words.json propio corren igual en un clon limpio.
+_CLASES = ["hola", "bien", "v", "l"]
+
+
+@pytest.fixture(autouse=True)
+def _words_json(tmp_path, monkeypatch):
+    ruta = tmp_path / "words.json"
+    ruta.write_text(json.dumps({"word_ids": _CLASES}), encoding="utf-8")
+    monkeypatch.setattr(ds, "WORDS_JSON", str(ruta))
+    return ruta
 
 
 def _muestra(label, codigo, bloque="A", tanda=1, fuente=None, n_frames=12, manos=1, sesion_id=None):
@@ -59,10 +73,14 @@ def test_robustez_solo_si_se_pide(tmp_path, monkeypatch):
     assert b.sesion.tolist() == ["P2-B", "P2-B"] and b.condicion.tolist() == ["x", "x"]
 
 
-def test_sin_nada_respeta_words_json():
+def test_sin_nada_respeta_words_json(_words_json):
     con = ds.clases_del_modelo(incluir_nada=True)
     sin = ds.clases_del_modelo(incluir_nada=False)
+    assert sin == _CLASES, "el orden de words.json es el índice de salida: no se toca"
     assert con[:-1] == sin and con[-1] == "nada"
+    # Si words.json ya trae "nada", no se agrega dos veces.
+    _words_json.write_text(json.dumps({"word_ids": [*_CLASES, "nada"]}), encoding="utf-8")
+    assert ds.clases_del_modelo(incluir_nada=True).count("nada") == 1
 
 
 def test_aportadas_sin_sesion_y_sin_repetir(tmp_path, monkeypatch):

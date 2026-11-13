@@ -17,7 +17,7 @@ que ya estaban.
 Todos los comandos se ejecutan **desde la raiz de este repo** (`modelo_LSA/`):
 
 ```bash
-C:/Users/Evelin/anaconda3/envs/tesis3/python.exe federated/test_fedavg.py
+C:/Users/Evelin/anaconda3/envs/tesis3/python.exe -m pytest tests/test_fedavg.py -q
 ```
 
 ---
@@ -31,7 +31,7 @@ C:/Users/Evelin/anaconda3/envs/tesis3/python.exe federated/test_fedavg.py
 | `fedavg.py` | El algoritmo: entrenamiento local, promediado ponderado, ciclo de rondas |
 | `metrics.py` | Accuracy, F1 macro/micro, matriz de confusión y consistencia σ |
 | `compresion.py` | Cuantización de las actualizaciones que suben los clientes |
-| `test_fedavg.py` | Los nueve tests de corrección |
+| `../tests/test_fedavg.py` | Los once tests de corrección (corren con la suite de pytest) |
 | `run_experiment.py` | Corre los cuatro escenarios y genera la tabla del informe |
 | `run_compresion.py` | Barre bits por valor y mide accuracy contra MB subidos |
 | `verificar_export.py` | Revisa un `lsa_samples.json` exportado desde la app |

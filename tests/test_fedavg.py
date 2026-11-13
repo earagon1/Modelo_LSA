@@ -5,40 +5,39 @@ Estos tests no miden si el modelo aprende: miden si la implementacion de
 FedAvg hace lo que dice hacer. Es la diferencia entre "programe algo" y "valide
 una implementacion", y es lo que sostiene el capitulo de metodologia.
 
-    1. test_promediado_de_clientes_identicos
-       K clientes con pesos identicos -> el promedio es ese mismo peso.
-       Si esto falla, el agregador esta deformando los pesos.
+Qué verifica cada uno, y qué no (auditoría, ML-M9: la versión anterior decía
+que el test de identidad detectaba fallas del ciclo de rondas, y nunca llamaba a
+`run_fedavg`; además quedaba fuera de pytest). Cada test de entrenamiento se
+comprobó rompiendo a propósito lo que cubre: sin el reset del optimizador fallan
+el 3, el 4 y el 5; promediando sin ponderar dentro de las rondas falla el 5.
 
-    2. test_ponderacion_por_cantidad_de_muestras
-       Cliente A con 90 muestras y B con 10 -> el resultado queda 9 veces mas
-       cerca de A. Si esto falla, se esta promediando sin ponderar y los
-       clientes con pocos datos pesan de mas.
+    1. Promediado: K clientes con pesos idénticos dan ese mismo peso.
+    2. Ponderación: con 90 y 10 muestras el resultado queda 9 veces más cerca
+       del primero. Si falla, los clientes con pocos datos pesan de más.
+    3. Identidad: `local_train` de un cliente con todos los datos es lo mismo
+       que entrenar centralizado una época con la misma instancia de modelo.
+       Prueba `local_train`, no las rondas.
+    4. Reset del optimizador: un cliente entrenado después de otro, con la
+       misma instancia, da lo mismo que entrenado solo, y sin el reset no.
+    5. Ciclo de rondas: `run_fedavg` da lo mismo que repetir a mano "cada
+       cliente entrena desde el global y se promedia", ronda por ronda.
+    6. Arquitectura: federated/model.py tiene las mismas capas (tipo, unidades,
+       dropout, activación) y la misma cantidad de parámetros que model.py.
+       No compara pesos ni inicializadores.
+    7. Lectura del JSON de la app, y 8-11 compresión de las actualizaciones.
 
-    3. test_identidad_un_cliente_equivale_a_centralizado
-       Un solo cliente con TODOS los datos y una epoca local tiene que dar
-       exactamente lo mismo que entrenar de forma centralizada una epoca.
-       Es la prueba mas fuerte: si el promediado o el ciclo de rondas
-       corrompieran algo, este test lo detecta.
+Ninguno mide si el modelo aprende: eso lo miden los experimentos.
 
-    4. test_arquitectura_replica_el_original
-       La red de federated/model.py tiene que ser identica a la de
-       model.py, o la comparacion contra el modelo en produccion
-       no significa nada.
-
-Se corre en CPU a proposito: los kernels cuDNN de LSTM no son deterministas y
-el test de identidad exige reproducibilidad bit a bit.
-
-Uso:
-    python federated/test_fedavg.py
-    pytest federated/test_fedavg.py -v      (si tenes pytest)
+Corre en CPU: los kernels cuDNN de LSTM no son deterministas y el test de
+identidad exige reproducibilidad bit a bit. Si otro test ya importó TensorFlow
+la variable llega tarde, pero en la PC de la tesis no hay GPU en tesis3.
 """
 
 from __future__ import annotations
 
 import os
 
-# Antes de importar TF: sin GPU no hay no-determinismo de cuDNN.
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
 
 import importlib.util
@@ -49,12 +48,26 @@ from pathlib import Path
 import numpy as np
 import tensorflow as tf
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
-from fedavg import aggregate, local_train  # noqa: E402
-from model import build_model  # noqa: E402
-
 RAIZ = Path(__file__).resolve().parent.parent
+sys.path.append(str(RAIZ / "federated"))
+
+from fedavg import aggregate, local_train, run_fedavg, weights_nbytes  # noqa: E402
+
+
+def _por_ruta(nombre: str, ruta: Path):
+    """
+    Importa un archivo con un nombre propio. Hay dos model.py (el de la raíz y el
+    de federated/): con `import model` ganaría el que esté antes en sys.path, y
+    los demás tests de la suite lo importan con ese nombre.
+    """
+    spec = importlib.util.spec_from_file_location(nombre, ruta)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+build_model = _por_ruta("modelo_federado", RAIZ / "federated" / "model.py").build_model
+
 SEED = 1234
 
 
@@ -139,25 +152,100 @@ def test_identidad_un_cliente_equivale_a_centralizado():
 
 
 # --------------------------------------------------------------------------
-# 4. Arquitectura
+# 4. Reset del optimizador entre clientes
 # --------------------------------------------------------------------------
-def _cargar_modelo_original():
+def _modelo_chico():
     """
-    Importa el model.py de produccion por ruta explicita.
+    Una red densa sin dropout: con lote completo, el entrenamiento es
+    determinista y no depende del orden de las muestras, así que dos caminos
+    que hacen la misma cuenta tienen que dar los mismos pesos.
+    """
+    tf.keras.utils.set_random_seed(SEED)
+    modelo = tf.keras.Sequential([
+        tf.keras.layers.Input((6,)),
+        tf.keras.layers.Dense(5, activation="relu"),
+        tf.keras.layers.Dense(3, activation="softmax"),
+    ])
+    modelo.compile(optimizer=tf.keras.optimizers.Adam(0.05), loss="categorical_crossentropy",
+                   metrics=["accuracy"])
+    return modelo
 
-    Se hace por ruta y no con `import model` porque este paquete tiene su
-    propio model.py y ganaria la colision. Se inyecta un stub de `constants`
-    para no arrastrar cv2 ni las rutas relativas a os.getcwd().
+
+def _datos_chicos(n, seed):
+    rng = np.random.default_rng(seed)
+    X = rng.normal(size=(n, 6)).astype(np.float32)
+    y = tf.keras.utils.to_categorical(rng.integers(0, 3, size=n), 3).astype(np.float32)
+    return X, y
+
+
+def _max_dif(a, b):
+    return max(float(np.max(np.abs(x - z))) for x, z in zip(a, b))
+
+
+def test_el_optimizador_no_arrastra_estado_entre_clientes():
+    Xa, ya = _datos_chicos(20, 1)
+    Xb, yb = _datos_chicos(20, 2)
+
+    compartido = _modelo_chico()
+    globales = [w.copy() for w in compartido.get_weights()]
+    local_train(compartido, globales, Xa, ya, epochs=3, batch_size=20, shuffle=False)
+    b_despues_de_a = local_train(compartido, globales, Xb, yb, epochs=3, batch_size=20, shuffle=False)
+
+    b_solo = local_train(_modelo_chico(), globales, Xb, yb, epochs=3, batch_size=20, shuffle=False)
+    assert _max_dif(b_despues_de_a, b_solo) < 1e-6, (
+        "El cliente B entrenó distinto por haber entrenado antes al A: "
+        "reset_optimizer_state no limpió los momentos de Adam"
+    )
+
+    # Control: sin el reset la diferencia se ve. Si no se viera, el test de
+    # arriba pasaría aunque reset_optimizer_state no hiciera nada.
+    compartido.set_weights(globales)
+    compartido.fit(Xb, yb, epochs=3, batch_size=20, shuffle=False, verbose=0)
+    assert _max_dif(compartido.get_weights(), b_solo) > 1e-4
+
+
+# --------------------------------------------------------------------------
+# 5. Ciclo de rondas
+# --------------------------------------------------------------------------
+def test_run_fedavg_es_entrenar_desde_el_global_y_promediar():
+    X, y = _datos_chicos(30, 3)
+    particiones = [np.arange(0, 20), np.arange(20, 30)]
+    rondas, epocas = 3, 2
+
+    salida = run_fedavg(_modelo_chico, X, y, particiones, X, y, rounds=rondas,
+                        local_epochs=epocas, batch_size=30, verbose=False)
+
+    # Lo mismo, a mano: cada cliente arranca del global de esa ronda.
+    modelo = _modelo_chico()
+    globales = modelo.get_weights()
+    inicial = [w.copy() for w in globales]
+    for _ in range(rondas):
+        updates = [(local_train(modelo, globales, X[p], y[p], epochs=epocas, batch_size=30, shuffle=False), len(p))
+                   for p in particiones]
+        globales = aggregate(updates)
+
+    assert _max_dif(salida["pesos"], globales) < 1e-5
+    assert _max_dif(salida["pesos"], inicial) > 1e-3, "las rondas no movieron los pesos"
+    assert salida["historia"]["ronda"] == [1, 2, 3]
+    # Por ronda sube un juego de pesos por cliente y baja uno por cliente.
+    por_juego = weights_nbytes(inicial)
+    assert salida["bytes_subida"] == salida["bytes_bajada"] == rondas * len(particiones) * por_juego
+
+
+# --------------------------------------------------------------------------
+# 6. Arquitectura
+# --------------------------------------------------------------------------
+def _cargar_modelo_original(monkeypatch):
+    """
+    Importa el model.py de producción con un stub de `constants`, para no
+    arrastrar cv2 ni las rutas relativas a os.getcwd(). El stub se saca al
+    terminar el test: si quedara en sys.modules, el próximo test que importe
+    `constants` recibiría el stub.
     """
     stub = types.ModuleType("constants")
     stub.LENGTH_KEYPOINTS = 126
-    sys.modules.setdefault("constants", stub)
-
-    ruta = RAIZ / "model.py"
-    spec = importlib.util.spec_from_file_location("modelo_lsa_original", ruta)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
+    monkeypatch.setitem(sys.modules, "constants", stub)
+    return _por_ruta("modelo_lsa_original", RAIZ / "model.py")
 
 
 def _firma(modelo):
@@ -177,8 +265,8 @@ def _firma(modelo):
     return firma
 
 
-def test_arquitectura_replica_el_original():
-    original = _cargar_modelo_original()
+def test_arquitectura_replica_el_original(monkeypatch):
+    original = _cargar_modelo_original(monkeypatch)
 
     tf.keras.utils.set_random_seed(SEED)
     modelo_original = original.get_model(15, 10)
@@ -197,7 +285,7 @@ def test_arquitectura_replica_el_original():
 
 
 # --------------------------------------------------------------------------
-# 5. Lectura del dataset exportado por la app
+# 7. Lectura del dataset exportado por la app
 # --------------------------------------------------------------------------
 def _json_de_la_app(ruta: Path, t=15, d=126):
     """
@@ -275,7 +363,7 @@ def test_carga_json_con_client_id():
 
 
 # --------------------------------------------------------------------------
-# 6-8. Compresion de las actualizaciones
+# 8-11. Compresion de las actualizaciones
 # --------------------------------------------------------------------------
 def test_deltas_equivalen_a_promediar_pesos():
     """
@@ -370,37 +458,3 @@ def test_bytes_bajan_con_los_bits():
     assert abs(b8 / b32 - 0.25) < 0.01, f"8 bits deberia ser ~1/4 de float32, dio {b8 / b32:.3f}"
     assert abs(b4 / b32 - 0.125) < 0.01, f"4 bits deberia ser ~1/8, dio {b4 / b32:.3f}"
 
-
-# --------------------------------------------------------------------------
-if __name__ == "__main__":
-    pruebas = [
-        test_promediado_de_clientes_identicos,
-        test_ponderacion_por_cantidad_de_muestras,
-        test_identidad_un_cliente_equivale_a_centralizado,
-        test_arquitectura_replica_el_original,
-        test_carga_json_con_client_id,
-        test_deltas_equivalen_a_promediar_pesos,
-        test_cuantizacion_determinista_acota_el_error,
-        test_cuantizacion_estocastica_es_insesgada,
-        test_bytes_bajan_con_los_bits,
-    ]
-
-    print("=" * 68)
-    print("TESTS DE CORRECCION DEL MODULO FEDERADO")
-    print("=" * 68)
-
-    fallaron = 0
-    for prueba in pruebas:
-        try:
-            prueba()
-            print(f"[ OK ]  {prueba.__name__}")
-        except AssertionError as e:
-            fallaron += 1
-            print(f"[FALLA] {prueba.__name__}\n        {e}")
-        except Exception as e:  # error de codigo, no de asercion
-            fallaron += 1
-            print(f"[ERROR] {prueba.__name__}\n        {type(e).__name__}: {e}")
-
-    print("=" * 68)
-    print(f"{len(pruebas) - fallaron}/{len(pruebas)} tests pasaron")
-    sys.exit(1 if fallaron else 0)

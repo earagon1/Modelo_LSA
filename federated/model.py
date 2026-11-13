@@ -8,7 +8,7 @@ importarse porque `modelo_LSA/model.py` arrastra `constants.py`, que a su vez
 importa cv2 y resuelve rutas contra `os.getcwd()`.
 
 Cualquier cambio en `modelo_LSA/model.py` hay que replicarlo aca. El test
-`test_fedavg.py::test_arquitectura_replica_el_original` lo verifica.
+`tests/test_fedavg.py::test_arquitectura_replica_el_original` lo verifica.
 """
 
 from __future__ import annotations

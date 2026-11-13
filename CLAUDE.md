@@ -27,7 +27,7 @@ Android, validación y un módulo de aprendizaje federado (`federated/`).
 ```bash
 PY=C:/Users/Evelin/anaconda3/envs/tesis3/python.exe
 $PY verify_dataset_mix.py                   # conteos por fuente y por clase (solo lee)
-$PY federated/test_fedavg.py                # 9 tests de corrección del federado
+$PY -m pytest tests/test_fedavg.py -q      # 11 tests de corrección del federado (también corren con la suite)
 $PY federated/verificar_export.py <json>    # valida un export del teléfono (solo lee)
 $PY validacion_cruzada.py                   # 5-fold OOF (lento; escribe en resultados_validacion/)
 # Federado por red local (plan/federado_completo.md, contrato contract/federado_v1.json)
