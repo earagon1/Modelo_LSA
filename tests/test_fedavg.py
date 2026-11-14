@@ -89,7 +89,7 @@ def test_promediado_de_clientes_identicos():
     for k in [2, 3, 5, 7]:
         updates = [([w.copy() for w in pesos], 50) for _ in range(k)]
         resultado = aggregate(updates)
-        for original, obtenido in zip(pesos, resultado):
+        for original, obtenido in zip(pesos, resultado, strict=True):
             assert np.allclose(original, obtenido, rtol=1e-6, atol=1e-7), (
                 f"Con {k} clientes identicos el promedio deberia ser el mismo peso"
             )
@@ -143,7 +143,7 @@ def test_identidad_un_cliente_equivale_a_centralizado():
     )
     pesos_federado = aggregate([([w.copy() for w in pesos_cliente], len(X))])
 
-    for i, (a, b) in enumerate(zip(pesos_centralizado, pesos_federado)):
+    for i, (a, b) in enumerate(zip(pesos_centralizado, pesos_federado, strict=True)):
         max_dif = float(np.max(np.abs(a - b)))
         assert max_dif < 1e-6, (
             f"Tensor {i}: FedAvg con 1 cliente difiere del centralizado "
@@ -179,7 +179,7 @@ def _datos_chicos(n, seed):
 
 
 def _max_dif(a, b):
-    return max(float(np.max(np.abs(x - z))) for x, z in zip(a, b))
+    return max(float(np.max(np.abs(x - z))) for x, z in zip(a, b, strict=True))
 
 
 def test_el_optimizador_no_arrastra_estado_entre_clientes():
@@ -384,13 +384,13 @@ def test_deltas_equivalen_a_promediar_pesos():
     ]
     tamanos = [90, 10, 50]
 
-    via_pesos = aggregate(list(zip(clientes, tamanos)))
+    via_pesos = aggregate(list(zip(clientes, tamanos, strict=True)))
 
-    deltas = [[c - g for c, g in zip(cli, globales)] for cli in clientes]
-    delta_medio = aggregate(list(zip(deltas, tamanos)))
-    via_deltas = [g + d for g, d in zip(globales, delta_medio)]
+    deltas = [[c - g for c, g in zip(cli, globales, strict=True)] for cli in clientes]
+    delta_medio = aggregate(list(zip(deltas, tamanos, strict=True)))
+    via_deltas = [g + d for g, d in zip(globales, delta_medio, strict=True)]
 
-    for i, (a, b) in enumerate(zip(via_pesos, via_deltas)):
+    for i, (a, b) in enumerate(zip(via_pesos, via_deltas, strict=True)):
         assert np.allclose(a, b, rtol=1e-5, atol=1e-6), (
             f"Tensor {i}: promediar deltas difiere de promediar pesos "
             f"(max |dif| = {np.max(np.abs(a - b)):.3e})"

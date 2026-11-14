@@ -59,8 +59,10 @@ def test_sha_y_base64_de_los_pesos():
     pesos = [_f32(t["datos"], t["forma"]) for t in s["tensores"]]
     assert pr.sha_pesos(pesos) == s["sha256"]
     assert [pr.a_b64(w, np.float32) for w in pesos] == s["base64"]
-    vuelta = pr.decodificar_pesos([{"forma": t["forma"], "datos": b} for t, b in zip(s["tensores"], s["base64"])])
-    assert all(np.array_equal(a, b) for a, b in zip(vuelta, pesos))
+    vuelta = pr.decodificar_pesos(
+        [{"forma": t["forma"], "datos": b} for t, b in zip(s["tensores"], s["base64"], strict=True)]
+    )
+    assert all(np.array_equal(a, b) for a, b in zip(vuelta, pesos, strict=True))
 
 
 @pytest.mark.parametrize("caso", _fixture()["rotacion"], ids=lambda c: f"semilla={c['semilla']}")

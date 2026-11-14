@@ -319,7 +319,7 @@ def escribir_resumen(res, salida):
                                    "persona. Estándar = esa tanda 2.")}
     for e, (t, q) in textos.items():
         if e in res["esquemas"]:
-            md += tabla_md(res, e, t, q) + [""]
+            md += [*tabla_md(res, e, t, q), ""]
     if "app" in res["esquemas"]:
         r = res["esquemas"]["app"]["condiciones"]
         a = res["app"]
@@ -327,12 +327,15 @@ def escribir_resumen(res, salida):
                f"Modelo publicado (sha `{a['modelo_sha256'][:8]}`), temperatura {a['temperatura']:.2f}, umbral "
                f"{a['umbral']}, sobre la secuencia que la app calculó en cada toma. Ya entrenó con la sesión 1 de "
                "estas personas, así que no hay referencia estándar justa.", "",
-               "| Condición | Tomas | Acierto (%) | Se muestra (%) | Acierto de lo mostrado (%) |", "|---|---|---|---|---|"]
+               "| Condición | Tomas | Acierto (%) | Se muestra (%) | Acierto de lo mostrado (%) |",
+               "|---|---|---|---|---|"]
         for c, v in r.items():
-            md.append(f"| {c} | {v['n']} | {pct(v['acierto'])} | {pct(v['mostradas'])} | {pct(v['acierto_mostradas'])} |")
+            md.append(f"| {c} | {v['n']} | {pct(v['acierto'])} | {pct(v['mostradas'])} "
+                      f"| {pct(v['acierto_mostradas'])} |")
         md.append("")
     md += ["## Detección de manos (HandLandmarker)", "",
-           "| Condición | Tomas | Frames con mano (%) | Ambas manos en «por favor» y «cómo estás» (%) | FPS (mediana) |",
+           "| Condición | Tomas | Frames con mano (%) | Ambas manos en «por favor» y «cómo estás» (%) "
+           "| FPS (mediana) |",
            "|---|---|---|---|---|"]
     for c, v in res["deteccion"].items():
         md.append(f"| {c} | {v['tomas']} | {pct(v['frames_con_mano'])} | {pct(v['ambas_en_senas_de_dos_manos'])} | "
