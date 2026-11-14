@@ -1,0 +1,2183 @@
+{
+  "config": {
+    "desde": [
+      "resultados_calibracion/2026-11-10_lopo",
+      "resultados_calibracion/2026-11-14_temperatura/entrenada"
+    ],
+    "entrenar": false,
+    "semillas": [
+      0,
+      1,
+      2
+    ],
+    "salida": "resultados_calibracion/2026-11-14_temperatura"
+  },
+  "datos": "1409 muestras, 13 clases | persona: {'P1': 1197, 'P2': 106, 'P3': 106} | fuente: {'telefono': 318, 'webcam': 1091} | excluidas: {'pocos_frames': 109}",
+  "t_publicada": 1.2008,
+  "umbral_app": 0.75,
+  "corridas": {
+    "2026-11-10_lopo (reanálisis, sin entrenar)": {
+      "descripcion": "Predicciones guardadas por calibrar.py en `resultados_calibracion/2026-11-10_lopo`. Las T de la receta salen de su resultados.json. 954 predicciones = 3 personas × 3 semillas.",
+      "analisis": {
+        "sin": {
+          "temperaturas": 1.0,
+          "metricas": {
+            "P1": {
+              "n": 318,
+              "accuracy": 0.5188679245283019,
+              "ece": 0.236379494012044,
+              "logloss": 1.9056586845525156,
+              "mostradas": 0.4591194968553459,
+              "n_mostradas": 146,
+              "confianza_media": 0.7442322142201726,
+              "confianza_media_mostradas": 0.9148079424911042,
+              "acierto_mostradas": 0.7054794520547946,
+              "mostradas_rango_semillas": [
+                0.39622641509433965,
+                0.5754716981132075
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.6428571428571429,
+                0.8372093023255814
+              ]
+            },
+            "P2": {
+              "n": 318,
+              "accuracy": 0.7452830188679245,
+              "ece": 0.17479966156723792,
+              "logloss": 1.2314884362565002,
+              "mostradas": 0.789308176100629,
+              "n_mostradas": 251,
+              "confianza_media": 0.9053953033894135,
+              "confianza_media_mostradas": 0.9652217757324892,
+              "acierto_mostradas": 0.7928286852589641,
+              "mostradas_rango_semillas": [
+                0.7358490566037735,
+                0.8207547169811321
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.7586206896551724,
+                0.8589743589743589
+              ]
+            },
+            "P3": {
+              "n": 318,
+              "accuracy": 0.7232704402515723,
+              "ece": 0.17589183294397992,
+              "logloss": 1.2450375669691935,
+              "mostradas": 0.7515723270440252,
+              "n_mostradas": 239,
+              "confianza_media": 0.8874384115348881,
+              "confianza_media_mostradas": 0.9526278425107211,
+              "acierto_mostradas": 0.8493723849372385,
+              "mostradas_rango_semillas": [
+                0.7169811320754716,
+                0.7924528301886793
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.8095238095238095,
+                0.881578947368421
+              ]
+            },
+            "todas": {
+              "n": 954,
+              "accuracy": 0.6624737945492662,
+              "ece": 0.18615040864088905,
+              "logloss": 1.460728229259403,
+              "mostradas": 0.6666666666666666,
+              "n_mostradas": 636,
+              "confianza_media": 0.845688643048158,
+              "confianza_media_mostradas": 0.9489161630072616,
+              "acierto_mostradas": 0.7940251572327044
+            }
+          },
+          "curva_todas": [
+            {
+              "umbral": 0.3,
+              "mostradas": 0.9339622641509434,
+              "acierto_mostradas": 0.6677890011223344
+            },
+            {
+              "umbral": 0.35,
+              "mostradas": 0.9318658280922432,
+              "acierto_mostradas": 0.6692913385826772
+            },
+            {
+              "umbral": 0.4,
+              "mostradas": 0.9266247379454927,
+              "acierto_mostradas": 0.670814479638009
+            },
+            {
+              "umbral": 0.45,
+              "mostradas": 0.9129979035639413,
+              "acierto_mostradas": 0.6704936854190585
+            },
+            {
+              "umbral": 0.5,
+              "mostradas": 0.8962264150943396,
+              "acierto_mostradas": 0.6748538011695906
+            },
+            {
+              "umbral": 0.55,
+              "mostradas": 0.850104821802935,
+              "acierto_mostradas": 0.6917385943279901
+            },
+            {
+              "umbral": 0.6,
+              "mostradas": 0.7882599580712788,
+              "acierto_mostradas": 0.7247340425531915
+            },
+            {
+              "umbral": 0.65,
+              "mostradas": 0.7484276729559748,
+              "acierto_mostradas": 0.7535014005602241
+            },
+            {
+              "umbral": 0.7,
+              "mostradas": 0.7085953878406709,
+              "acierto_mostradas": 0.7707100591715976
+            },
+            {
+              "umbral": 0.75,
+              "mostradas": 0.6666666666666666,
+              "acierto_mostradas": 0.7940251572327044
+            },
+            {
+              "umbral": 0.8,
+              "mostradas": 0.6383647798742138,
+              "acierto_mostradas": 0.80623973727422
+            },
+            {
+              "umbral": 0.85,
+              "mostradas": 0.5985324947589099,
+              "acierto_mostradas": 0.8213660245183888
+            },
+            {
+              "umbral": 0.9,
+              "mostradas": 0.5408805031446541,
+              "acierto_mostradas": 0.8372093023255814
+            },
+            {
+              "umbral": 0.95,
+              "mostradas": 0.4371069182389937,
+              "acierto_mostradas": 0.8752997601918465
+            }
+          ]
+        },
+        "publicada": {
+          "temperaturas": 1.2008,
+          "metricas": {
+            "P1": {
+              "n": 318,
+              "accuracy": 0.5188679245283019,
+              "ece": 0.18599489089621227,
+              "logloss": 1.7188362720077575,
+              "mostradas": 0.389937106918239,
+              "n_mostradas": 124,
+              "confianza_media": 0.6936386957657676,
+              "confianza_media_mostradas": 0.8971687803118658,
+              "acierto_mostradas": 0.75,
+              "mostradas_rango_semillas": [
+                0.330188679245283,
+                0.4811320754716981
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.6857142857142857,
+                0.868421052631579
+              ]
+            },
+            "P2": {
+              "n": 318,
+              "accuracy": 0.7452830188679245,
+              "ece": 0.1457440466033342,
+              "logloss": 1.08152689179582,
+              "mostradas": 0.7641509433962265,
+              "n_mostradas": 243,
+              "confianza_media": 0.8771556817936264,
+              "confianza_media_mostradas": 0.9496978924913612,
+              "acierto_mostradas": 0.7942386831275721,
+              "mostradas_rango_semillas": [
+                0.7075471698113207,
+                0.7924528301886793
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.7619047619047619,
+                0.8533333333333334
+              ]
+            },
+            "P3": {
+              "n": 318,
+              "accuracy": 0.7232704402515723,
+              "ece": 0.1297626035853265,
+              "logloss": 1.1043861306100387,
+              "mostradas": 0.7138364779874213,
+              "n_mostradas": 227,
+              "confianza_media": 0.8530330438368987,
+              "confianza_media_mostradas": 0.9342285979466771,
+              "acierto_mostradas": 0.8678414096916299,
+              "mostradas_rango_semillas": [
+                0.6792452830188679,
+                0.7452830188679245
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.8289473684210527,
+                0.9166666666666666
+              ]
+            },
+            "todas": {
+              "n": 954,
+              "accuracy": 0.6624737945492662,
+              "ece": 0.15272879530216688,
+              "logloss": 1.301583098137872,
+              "mostradas": 0.6226415094339622,
+              "n_mostradas": 594,
+              "confianza_media": 0.8079424737987644,
+              "confianza_media_mostradas": 0.9328205528080267,
+              "acierto_mostradas": 0.8131313131313131
+            }
+          },
+          "curva_todas": [
+            {
+              "umbral": 0.3,
+              "mostradas": 0.9318658280922432,
+              "acierto_mostradas": 0.6692913385826772
+            },
+            {
+              "umbral": 0.35,
+              "mostradas": 0.9308176100628931,
+              "acierto_mostradas": 0.670045045045045
+            },
+            {
+              "umbral": 0.4,
+              "mostradas": 0.9161425576519916,
+              "acierto_mostradas": 0.6716247139588101
+            },
+            {
+              "umbral": 0.45,
+              "mostradas": 0.9035639412997903,
+              "acierto_mostradas": 0.6751740139211136
+            },
+            {
+              "umbral": 0.5,
+              "mostradas": 0.8448637316561844,
+              "acierto_mostradas": 0.6923076923076923
+            },
+            {
+              "umbral": 0.55,
+              "mostradas": 0.7840670859538784,
+              "acierto_mostradas": 0.7286096256684492
+            },
+            {
+              "umbral": 0.6,
+              "mostradas": 0.7368972746331237,
+              "acierto_mostradas": 0.7581792318634424
+            },
+            {
+              "umbral": 0.65,
+              "mostradas": 0.6939203354297694,
+              "acierto_mostradas": 0.7794561933534743
+            },
+            {
+              "umbral": 0.7,
+              "mostradas": 0.6509433962264151,
+              "acierto_mostradas": 0.7987117552334944
+            },
+            {
+              "umbral": 0.75,
+              "mostradas": 0.6226415094339622,
+              "acierto_mostradas": 0.8131313131313131
+            },
+            {
+              "umbral": 0.8,
+              "mostradas": 0.5859538784067087,
+              "acierto_mostradas": 0.8228980322003577
+            },
+            {
+              "umbral": 0.85,
+              "mostradas": 0.5272536687631028,
+              "acierto_mostradas": 0.8449304174950298
+            },
+            {
+              "umbral": 0.9,
+              "mostradas": 0.4444444444444444,
+              "acierto_mostradas": 0.875
+            },
+            {
+              "umbral": 0.95,
+              "mostradas": 0.35429769392033544,
+              "acierto_mostradas": 0.8875739644970414
+            }
+          ]
+        },
+        "receta_mediana": {
+          "temperaturas": 1.2868249020835787,
+          "metricas": {
+            "P1": {
+              "n": 318,
+              "accuracy": 0.5188679245283019,
+              "ece": 0.16432168971317723,
+              "logloss": 1.6642071752442902,
+              "mostradas": 0.36477987421383645,
+              "n_mostradas": 116,
+              "confianza_media": 0.6726398375440197,
+              "confianza_media_mostradas": 0.8871494807286905,
+              "acierto_mostradas": 0.7672413793103449,
+              "mostradas_rango_semillas": [
+                0.3113207547169811,
+                0.4339622641509434
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.717391304347826,
+                0.8648648648648649
+              ]
+            },
+            "P2": {
+              "n": 318,
+              "accuracy": 0.7452830188679245,
+              "ece": 0.13822604392298452,
+              "logloss": 1.037022888610108,
+              "mostradas": 0.7452830188679245,
+              "n_mostradas": 237,
+              "confianza_media": 0.8637438161493797,
+              "confianza_media_mostradas": 0.9437092226540429,
+              "acierto_mostradas": 0.7974683544303798,
+              "mostradas_rango_semillas": [
+                0.6886792452830188,
+                0.7735849056603774
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.7560975609756098,
+                0.8493150684931506
+              ]
+            },
+            "P3": {
+              "n": 318,
+              "accuracy": 0.7232704402515723,
+              "ece": 0.11461846123699862,
+              "logloss": 1.0635682316921717,
+              "mostradas": 0.6949685534591195,
+              "n_mostradas": 221,
+              "confianza_media": 0.8372635502063828,
+              "confianza_media_mostradas": 0.9255062654633286,
+              "acierto_mostradas": 0.8778280542986425,
+              "mostradas_rango_semillas": [
+                0.660377358490566,
+                0.7358490566037735
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.8356164383561644,
+                0.9285714285714286
+              ]
+            },
+            "todas": {
+              "n": 954,
+              "accuracy": 0.6624737945492662,
+              "ece": 0.13512418875522517,
+              "logloss": 1.25493276518219,
+              "mostradas": 0.6016771488469602,
+              "n_mostradas": 574,
+              "confianza_media": 0.7912157346332607,
+              "confianza_media_mostradas": 0.9252705752629474,
+              "acierto_mostradas": 0.8222996515679443
+            }
+          },
+          "curva_todas": [
+            {
+              "umbral": 0.3,
+              "mostradas": 0.9318658280922432,
+              "acierto_mostradas": 0.6692913385826772
+            },
+            {
+              "umbral": 0.35,
+              "mostradas": 0.9266247379454927,
+              "acierto_mostradas": 0.670814479638009
+            },
+            {
+              "umbral": 0.4,
+              "mostradas": 0.9140461215932913,
+              "acierto_mostradas": 0.6720183486238532
+            },
+            {
+              "umbral": 0.45,
+              "mostradas": 0.8888888888888888,
+              "acierto_mostradas": 0.6780660377358491
+            },
+            {
+              "umbral": 0.5,
+              "mostradas": 0.8249475890985325,
+              "acierto_mostradas": 0.6988564167725541
+            },
+            {
+              "umbral": 0.55,
+              "mostradas": 0.7610062893081762,
+              "acierto_mostradas": 0.7424242424242424
+            },
+            {
+              "umbral": 0.6,
+              "mostradas": 0.7180293501048218,
+              "acierto_mostradas": 0.7678832116788321
+            },
+            {
+              "umbral": 0.65,
+              "mostradas": 0.6698113207547169,
+              "acierto_mostradas": 0.7887323943661971
+            },
+            {
+              "umbral": 0.7,
+              "mostradas": 0.6383647798742138,
+              "acierto_mostradas": 0.8029556650246306
+            },
+            {
+              "umbral": 0.75,
+              "mostradas": 0.6016771488469602,
+              "acierto_mostradas": 0.8222996515679443
+            },
+            {
+              "umbral": 0.8,
+              "mostradas": 0.5649895178197065,
+              "acierto_mostradas": 0.8293135435992579
+            },
+            {
+              "umbral": 0.85,
+              "mostradas": 0.48951781970649894,
+              "acierto_mostradas": 0.860813704496788
+            },
+            {
+              "umbral": 0.9,
+              "mostradas": 0.41823899371069184,
+              "acierto_mostradas": 0.87468671679198
+            },
+            {
+              "umbral": 0.95,
+              "mostradas": 0.2945492662473795,
+              "acierto_mostradas": 0.896797153024911
+            }
+          ]
+        },
+        "receta_pliegue": {
+          "temperaturas": {
+            "0-P1": 1.0649960926383368,
+            "0-P2": 1.4776014010119523,
+            "0-P3": 1.2868249020835787,
+            "1-P1": 1.0667651576717176,
+            "1-P2": 1.6707736159535023,
+            "1-P3": 1.4399495054181852,
+            "2-P1": 1.3113607141643193,
+            "2-P2": 0.9893745080443149,
+            "2-P3": 1.054944541646648
+          },
+          "metricas": {
+            "P1": {
+              "n": 318,
+              "accuracy": 0.5188679245283019,
+              "ece": 0.19516186997718787,
+              "logloss": 1.7709071444170734,
+              "mostradas": 0.4025157232704403,
+              "n_mostradas": 128,
+              "confianza_media": 0.7081760370730135,
+              "confianza_media_mostradas": 0.9039893257036729,
+              "acierto_mostradas": 0.7265625,
+              "mostradas_rango_semillas": [
+                0.37735849056603776,
+                0.4339622641509434
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.625,
+                0.8333333333333334
+              ]
+            },
+            "P2": {
+              "n": 318,
+              "accuracy": 0.7452830188679245,
+              "ece": 0.11065656417101495,
+              "logloss": 1.0472950820031923,
+              "mostradas": 0.7264150943396226,
+              "n_mostradas": 231,
+              "confianza_media": 0.8478197822240574,
+              "confianza_media_mostradas": 0.9373100740792174,
+              "acierto_mostradas": 0.8095238095238095,
+              "mostradas_rango_semillas": [
+                0.6698113207547169,
+                0.8113207547169812
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.7674418604651163,
+                0.8591549295774648
+              ]
+            },
+            "P3": {
+              "n": 318,
+              "accuracy": 0.7232704402515723,
+              "ece": 0.1186864437501723,
+              "logloss": 1.075411903028885,
+              "mostradas": 0.6949685534591195,
+              "n_mostradas": 221,
+              "confianza_media": 0.8419568840017446,
+              "confianza_media_mostradas": 0.9280274322615397,
+              "acierto_mostradas": 0.8687782805429864,
+              "mostradas_rango_semillas": [
+                0.6886792452830188,
+                0.7075471698113207
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.8356164383561644,
+                0.8933333333333333
+              ]
+            },
+            "todas": {
+              "n": 954,
+              "accuracy": 0.6624737945492662,
+              "ece": 0.1375379304657467,
+              "logloss": 1.29787137648305,
+              "mostradas": 0.6079664570230608,
+              "n_mostradas": 580,
+              "confianza_media": 0.7993175677662718,
+              "confianza_media_mostradas": 0.9264195229864993,
+              "acierto_mostradas": 0.8137931034482758
+            }
+          },
+          "curva_todas": [
+            {
+              "umbral": 0.3,
+              "mostradas": 0.9329140461215933,
+              "acierto_mostradas": 0.6685393258426966
+            },
+            {
+              "umbral": 0.35,
+              "mostradas": 0.9245283018867925,
+              "acierto_mostradas": 0.671201814058957
+            },
+            {
+              "umbral": 0.4,
+              "mostradas": 0.9182389937106918,
+              "acierto_mostradas": 0.6723744292237442
+            },
+            {
+              "umbral": 0.45,
+              "mostradas": 0.8951781970649895,
+              "acierto_mostradas": 0.6768149882903981
+            },
+            {
+              "umbral": 0.5,
+              "mostradas": 0.8574423480083857,
+              "acierto_mostradas": 0.684596577017115
+            },
+            {
+              "umbral": 0.55,
+              "mostradas": 0.7924528301886793,
+              "acierto_mostradas": 0.7182539682539683
+            },
+            {
+              "umbral": 0.6,
+              "mostradas": 0.7316561844863732,
+              "acierto_mostradas": 0.7564469914040115
+            },
+            {
+              "umbral": 0.65,
+              "mostradas": 0.6823899371069182,
+              "acierto_mostradas": 0.7880184331797235
+            },
+            {
+              "umbral": 0.7,
+              "mostradas": 0.6488469601677149,
+              "acierto_mostradas": 0.7996768982229402
+            },
+            {
+              "umbral": 0.75,
+              "mostradas": 0.6079664570230608,
+              "acierto_mostradas": 0.8137931034482758
+            },
+            {
+              "umbral": 0.8,
+              "mostradas": 0.5670859538784067,
+              "acierto_mostradas": 0.8317929759704251
+            },
+            {
+              "umbral": 0.85,
+              "mostradas": 0.5167714884696016,
+              "acierto_mostradas": 0.8498985801217038
+            },
+            {
+              "umbral": 0.9,
+              "mostradas": 0.429769392033543,
+              "acierto_mostradas": 0.8707317073170732
+            },
+            {
+              "umbral": 0.95,
+              "mostradas": 0.27672955974842767,
+              "acierto_mostradas": 0.9128787878787878
+            }
+          ]
+        },
+        "anidada": {
+          "temperaturas": {
+            "0-P1": 1.8290696138545834,
+            "0-P2": 1.995863522358421,
+            "0-P3": 1.879528220816,
+            "1-P1": 2.08840227070117,
+            "1-P2": 2.052360715708014,
+            "1-P3": 2.125428890496099,
+            "2-P1": 1.861677808165134,
+            "2-P2": 1.9125245491075156,
+            "2-P3": 2.0421495692303693
+          },
+          "metricas": {
+            "P1": {
+              "n": 318,
+              "accuracy": 0.5188679245283019,
+              "ece": 0.07932731191200208,
+              "logloss": 1.503969590767189,
+              "mostradas": 0.14150943396226415,
+              "n_mostradas": 45,
+              "confianza_media": 0.5324390443086385,
+              "confianza_media_mostradas": 0.8268874704920591,
+              "acierto_mostradas": 0.8888888888888888,
+              "mostradas_rango_semillas": [
+                0.0,
+                0.3018867924528302
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.84375,
+                1.0
+              ]
+            },
+            "P2": {
+              "n": 318,
+              "accuracy": 0.7452830188679245,
+              "ece": 0.08236727802754666,
+              "logloss": 0.9113840230676242,
+              "mostradas": 0.5691823899371069,
+              "n_mostradas": 181,
+              "confianza_media": 0.7343827695869797,
+              "confianza_media_mostradas": 0.8750670462672153,
+              "acierto_mostradas": 0.8397790055248618,
+              "mostradas_rango_semillas": [
+                0.5471698113207547,
+                0.6037735849056604
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.8135593220338984,
+                0.8793103448275862
+              ]
+            },
+            "P3": {
+              "n": 318,
+              "accuracy": 0.7232704402515723,
+              "ece": 0.10663581104832341,
+              "logloss": 0.9627948046619842,
+              "mostradas": 0.389937106918239,
+              "n_mostradas": 124,
+              "confianza_media": 0.691789458819733,
+              "confianza_media_mostradas": 0.8727937248799277,
+              "acierto_mostradas": 0.9354838709677419,
+              "mostradas_rango_semillas": [
+                0.32075471698113206,
+                0.4339622641509434
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.8823529411764706,
+                0.9772727272727273
+              ]
+            },
+            "todas": {
+              "n": 954,
+              "accuracy": 0.6624737945492662,
+              "ece": 0.05375418790975398,
+              "logloss": 1.1260494728322659,
+              "mostradas": 0.3668763102725367,
+              "n_mostradas": 350,
+              "confianza_media": 0.6528704242384504,
+              "confianza_media_mostradas": 0.8680671240903419,
+              "acierto_mostradas": 0.88
+            }
+          },
+          "curva_todas": [
+            {
+              "umbral": 0.3,
+              "mostradas": 0.9150943396226415,
+              "acierto_mostradas": 0.6712485681557846
+            },
+            {
+              "umbral": 0.35,
+              "mostradas": 0.8742138364779874,
+              "acierto_mostradas": 0.684652278177458
+            },
+            {
+              "umbral": 0.4,
+              "mostradas": 0.7935010482180294,
+              "acierto_mostradas": 0.7212681638044914
+            },
+            {
+              "umbral": 0.45,
+              "mostradas": 0.7169811320754716,
+              "acierto_mostradas": 0.7646198830409356
+            },
+            {
+              "umbral": 0.5,
+              "mostradas": 0.6614255765199162,
+              "acierto_mostradas": 0.7923930269413629
+            },
+            {
+              "umbral": 0.55,
+              "mostradas": 0.6184486373165619,
+              "acierto_mostradas": 0.8152542372881356
+            },
+            {
+              "umbral": 0.6,
+              "mostradas": 0.5754716981132075,
+              "acierto_mostradas": 0.8342440801457195
+            },
+            {
+              "umbral": 0.65,
+              "mostradas": 0.5,
+              "acierto_mostradas": 0.8490566037735849
+            },
+            {
+              "umbral": 0.7,
+              "mostradas": 0.44234800838574423,
+              "acierto_mostradas": 0.8767772511848341
+            },
+            {
+              "umbral": 0.75,
+              "mostradas": 0.3668763102725367,
+              "acierto_mostradas": 0.88
+            },
+            {
+              "umbral": 0.8,
+              "mostradas": 0.29350104821802936,
+              "acierto_mostradas": 0.8785714285714286
+            },
+            {
+              "umbral": 0.85,
+              "mostradas": 0.21069182389937108,
+              "acierto_mostradas": 0.9402985074626866
+            },
+            {
+              "umbral": 0.9,
+              "mostradas": 0.13417190775681342,
+              "acierto_mostradas": 0.9765625
+            },
+            {
+              "umbral": 0.95,
+              "mostradas": 0.049266247379454925,
+              "acierto_mostradas": 1.0
+            }
+          ]
+        },
+        "oraculo": {
+          "temperaturas": {
+            "0-P1": 2.0601814819273447,
+            "0-P2": 1.7135167296970855,
+            "0-P3": 1.939591752545874,
+            "1-P1": 2.090095742413156,
+            "1-P2": 2.1541593633057436,
+            "1-P3": 2.0197244316630316,
+            "2-P1": 2.108056155593094,
+            "2-P2": 1.985572645155726,
+            "2-P3": 1.7286943695380097
+          },
+          "metricas": {
+            "P1": {
+              "n": 318,
+              "accuracy": 0.5188679245283019,
+              "ece": 0.088294638336303,
+              "logloss": 1.4975760774006492,
+              "mostradas": 0.10062893081761007,
+              "n_mostradas": 32,
+              "confianza_media": 0.5020345600380115,
+              "confianza_media_mostradas": 0.7911415059972081,
+              "acierto_mostradas": 0.90625,
+              "mostradas_rango_semillas": [
+                0.0,
+                0.20754716981132076
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.8636363636363636,
+                1.0
+              ]
+            },
+            "P2": {
+              "n": 318,
+              "accuracy": 0.7452830188679245,
+              "ece": 0.07855484376727144,
+              "logloss": 0.905582146243787,
+              "mostradas": 0.5628930817610063,
+              "n_mostradas": 179,
+              "confianza_media": 0.7410705214149631,
+              "confianza_media_mostradas": 0.8827656858450981,
+              "acierto_mostradas": 0.8379888268156425,
+              "mostradas_rango_semillas": [
+                0.5188679245283019,
+                0.6132075471698113
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.8135593220338984,
+                0.8769230769230769
+              ]
+            },
+            "P3": {
+              "n": 318,
+              "accuracy": 0.7232704402515723,
+              "ece": 0.09174644722740162,
+              "logloss": 0.9560008429450066,
+              "mostradas": 0.4591194968553459,
+              "n_mostradas": 146,
+              "confianza_media": 0.7157325643721298,
+              "confianza_media_mostradas": 0.8807090222149232,
+              "acierto_mostradas": 0.9178082191780822,
+              "mostradas_rango_semillas": [
+                0.3113207547169811,
+                0.5566037735849056
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.8787878787878788,
+                0.9491525423728814
+              ]
+            },
+            "todas": {
+              "n": 954,
+              "accuracy": 0.6624737945492662,
+              "ece": 0.04889571052645037,
+              "logloss": 1.1197196888631478,
+              "mostradas": 0.3742138364779874,
+              "n_mostradas": 357,
+              "confianza_media": 0.6529458819417014,
+              "confianza_media_mostradas": 0.8737117736738432,
+              "acierto_mostradas": 0.876750700280112
+            }
+          },
+          "curva_todas": [
+            {
+              "umbral": 0.3,
+              "mostradas": 0.9140461215932913,
+              "acierto_mostradas": 0.6731651376146789
+            },
+            {
+              "umbral": 0.35,
+              "mostradas": 0.8679245283018868,
+              "acierto_mostradas": 0.6823671497584541
+            },
+            {
+              "umbral": 0.4,
+              "mostradas": 0.7851153039832285,
+              "acierto_mostradas": 0.7276368491321762
+            },
+            {
+              "umbral": 0.45,
+              "mostradas": 0.7075471698113207,
+              "acierto_mostradas": 0.7688888888888888
+            },
+            {
+              "umbral": 0.5,
+              "mostradas": 0.6540880503144654,
+              "acierto_mostradas": 0.7948717948717948
+            },
+            {
+              "umbral": 0.55,
+              "mostradas": 0.6153039832285115,
+              "acierto_mostradas": 0.8160136286201022
+            },
+            {
+              "umbral": 0.6,
+              "mostradas": 0.5660377358490566,
+              "acierto_mostradas": 0.8333333333333334
+            },
+            {
+              "umbral": 0.65,
+              "mostradas": 0.49056603773584906,
+              "acierto_mostradas": 0.8653846153846154
+            },
+            {
+              "umbral": 0.7,
+              "mostradas": 0.4350104821802935,
+              "acierto_mostradas": 0.8771084337349397
+            },
+            {
+              "umbral": 0.75,
+              "mostradas": 0.3742138364779874,
+              "acierto_mostradas": 0.876750700280112
+            },
+            {
+              "umbral": 0.8,
+              "mostradas": 0.3039832285115304,
+              "acierto_mostradas": 0.8931034482758621
+            },
+            {
+              "umbral": 0.85,
+              "mostradas": 0.22641509433962265,
+              "acierto_mostradas": 0.9259259259259259
+            },
+            {
+              "umbral": 0.9,
+              "mostradas": 0.14779874213836477,
+              "acierto_mostradas": 0.9645390070921985
+            },
+            {
+              "umbral": 0.95,
+              "mostradas": 0.06184486373165619,
+              "acierto_mostradas": 1.0
+            }
+          ]
+        },
+        "_t_lopo_todas": 1.9761136947535745
+      },
+      "composicion_calibracion": {
+        "0-P1": {
+          "n": 43,
+          "fuente": {
+            "telefono": 43
+          },
+          "persona": {
+            "P2": 26,
+            "P3": 17
+          }
+        },
+        "0-P2": {
+          "n": 261,
+          "fuente": {
+            "webcam": 218,
+            "telefono": 43
+          },
+          "persona": {
+            "P1": 241,
+            "P3": 20
+          }
+        },
+        "0-P3": {
+          "n": 261,
+          "fuente": {
+            "webcam": 218,
+            "telefono": 43
+          },
+          "persona": {
+            "P1": 241,
+            "P2": 20
+          }
+        },
+        "1-P1": {
+          "n": 43,
+          "fuente": {
+            "telefono": 43
+          },
+          "persona": {
+            "P2": 27,
+            "P3": 16
+          }
+        },
+        "1-P2": {
+          "n": 261,
+          "fuente": {
+            "telefono": 39,
+            "webcam": 222
+          },
+          "persona": {
+            "P1": 240,
+            "P3": 21
+          }
+        },
+        "1-P3": {
+          "n": 261,
+          "fuente": {
+            "telefono": 39,
+            "webcam": 222
+          },
+          "persona": {
+            "P1": 240,
+            "P2": 21
+          }
+        },
+        "2-P1": {
+          "n": 43,
+          "fuente": {
+            "telefono": 43
+          },
+          "persona": {
+            "P2": 21,
+            "P3": 22
+          }
+        },
+        "2-P2": {
+          "n": 261,
+          "fuente": {
+            "webcam": 223,
+            "telefono": 38
+          },
+          "persona": {
+            "P1": 244,
+            "P3": 17
+          }
+        },
+        "2-P3": {
+          "n": 261,
+          "fuente": {
+            "webcam": 223,
+            "telefono": 38
+          },
+          "persona": {
+            "P1": 244,
+            "P2": 17
+          }
+        }
+      }
+    },
+    "resultados_calibracion/2026-11-14_temperatura/entrenada (reentrenada con la receta de calibrar.py)": {
+      "descripcion": "Misma receta que calibrar.py (LOPO, 20 % de calibración estratificado, mismo `entrenar`, GPU), con las predicciones del set de calibración guardadas para ajustar también la T solo con sus tomas de teléfono (`cal_telefono`). 954 predicciones = 3 personas × 3 semillas.",
+      "analisis": {
+        "sin": {
+          "temperaturas": 1.0,
+          "metricas": {
+            "P1": {
+              "n": 318,
+              "accuracy": 0.5062893081761006,
+              "ece": 0.23974556103411865,
+              "logloss": 1.7921367280350922,
+              "mostradas": 0.4308176100628931,
+              "n_mostradas": 137,
+              "confianza_media": 0.7424742192500354,
+              "confianza_media_mostradas": 0.9145005350932014,
+              "acierto_mostradas": 0.7737226277372263,
+              "mostradas_rango_semillas": [
+                0.32075471698113206,
+                0.49056603773584906
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.7307692307692307,
+                0.8235294117647058
+              ]
+            },
+            "P2": {
+              "n": 318,
+              "accuracy": 0.7169811320754716,
+              "ece": 0.1668314176786084,
+              "logloss": 1.1929413685056474,
+              "mostradas": 0.7327044025157232,
+              "n_mostradas": 233,
+              "confianza_media": 0.8623283078281619,
+              "confianza_media_mostradas": 0.9487967937212958,
+              "acierto_mostradas": 0.7811158798283262,
+              "mostradas_rango_semillas": [
+                0.6792452830188679,
+                0.7641509433962265
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.6875,
+                0.875
+              ]
+            },
+            "P3": {
+              "n": 318,
+              "accuracy": 0.7264150943396226,
+              "ece": 0.17141707197237654,
+              "logloss": 1.350240226072083,
+              "mostradas": 0.7327044025157232,
+              "n_mostradas": 233,
+              "confianza_media": 0.8712040879678544,
+              "confianza_media_mostradas": 0.9501267490318085,
+              "acierto_mostradas": 0.8025751072961373,
+              "mostradas_rango_semillas": [
+                0.6698113207547169,
+                0.839622641509434
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.7752808988764045,
+                0.8591549295774648
+              ]
+            },
+            "todas": {
+              "n": 954,
+              "accuracy": 0.649895178197065,
+              "ece": 0.1855735583241167,
+              "logloss": 1.4451061075376075,
+              "mostradas": 0.6320754716981132,
+              "n_mostradas": 603,
+              "confianza_media": 0.825335538348684,
+              "confianza_media_mostradas": 0.9415186712591076,
+              "acierto_mostradas": 0.7877280265339967
+            }
+          },
+          "curva_todas": [
+            {
+              "umbral": 0.3,
+              "mostradas": 0.9171907756813418,
+              "acierto_mostradas": 0.656
+            },
+            {
+              "umbral": 0.35,
+              "mostradas": 0.9150943396226415,
+              "acierto_mostradas": 0.6552119129438717
+            },
+            {
+              "umbral": 0.4,
+              "mostradas": 0.8972746331236897,
+              "acierto_mostradas": 0.6577102803738317
+            },
+            {
+              "umbral": 0.45,
+              "mostradas": 0.8784067085953878,
+              "acierto_mostradas": 0.6646778042959427
+            },
+            {
+              "umbral": 0.5,
+              "mostradas": 0.8480083857442348,
+              "acierto_mostradas": 0.6773794808405439
+            },
+            {
+              "umbral": 0.55,
+              "mostradas": 0.8092243186582809,
+              "acierto_mostradas": 0.694300518134715
+            },
+            {
+              "umbral": 0.6,
+              "mostradas": 0.759958071278826,
+              "acierto_mostradas": 0.7144827586206897
+            },
+            {
+              "umbral": 0.65,
+              "mostradas": 0.7138364779874213,
+              "acierto_mostradas": 0.7459618208516887
+            },
+            {
+              "umbral": 0.7,
+              "mostradas": 0.6771488469601677,
+              "acierto_mostradas": 0.760061919504644
+            },
+            {
+              "umbral": 0.75,
+              "mostradas": 0.6320754716981132,
+              "acierto_mostradas": 0.7877280265339967
+            },
+            {
+              "umbral": 0.8,
+              "mostradas": 0.5953878406708596,
+              "acierto_mostradas": 0.8045774647887324
+            },
+            {
+              "umbral": 0.85,
+              "mostradas": 0.550314465408805,
+              "acierto_mostradas": 0.8152380952380952
+            },
+            {
+              "umbral": 0.9,
+              "mostradas": 0.49056603773584906,
+              "acierto_mostradas": 0.8290598290598291
+            },
+            {
+              "umbral": 0.95,
+              "mostradas": 0.3752620545073375,
+              "acierto_mostradas": 0.8659217877094972
+            }
+          ]
+        },
+        "publicada": {
+          "temperaturas": 1.2008,
+          "metricas": {
+            "P1": {
+              "n": 318,
+              "accuracy": 0.5062893081761006,
+              "ece": 0.1969596671925246,
+              "logloss": 1.6256793515862469,
+              "mostradas": 0.3805031446540881,
+              "n_mostradas": 121,
+              "confianza_media": 0.6910794138766089,
+              "confianza_media_mostradas": 0.8870814422646794,
+              "acierto_mostradas": 0.7851239669421488,
+              "mostradas_rango_semillas": [
+                0.2358490566037736,
+                0.4528301886792453
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.75,
+                0.84
+              ]
+            },
+            "P2": {
+              "n": 318,
+              "accuracy": 0.7169811320754716,
+              "ece": 0.1622927034434541,
+              "logloss": 1.0727449436577448,
+              "mostradas": 0.6886792452830188,
+              "n_mostradas": 219,
+              "confianza_media": 0.825609520080914,
+              "confianza_media_mostradas": 0.9310719189123163,
+              "acierto_mostradas": 0.8082191780821918,
+              "mostradas_rango_semillas": [
+                0.6320754716981132,
+                0.7264150943396226
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.7066666666666667,
+                0.8955223880597015
+              ]
+            },
+            "P3": {
+              "n": 318,
+              "accuracy": 0.7264150943396226,
+              "ece": 0.14535083592116735,
+              "logloss": 1.197305250995063,
+              "mostradas": 0.6635220125786163,
+              "n_mostradas": 211,
+              "confianza_media": 0.8371076193590077,
+              "confianza_media_mostradas": 0.9404090819599059,
+              "acierto_mostradas": 0.8293838862559242,
+              "mostradas_rango_semillas": [
+                0.6037735849056604,
+                0.7735849056603774
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.8153846153846154,
+                0.859375
+              ]
+            },
+            "todas": {
+              "n": 954,
+              "accuracy": 0.649895178197065,
+              "ece": 0.14832891323770947,
+              "logloss": 1.298576515413018,
+              "mostradas": 0.5775681341719078,
+              "n_mostradas": 551,
+              "confianza_media": 0.7845988511055101,
+              "confianza_media_mostradas": 0.9249871525396801,
+              "acierto_mostradas": 0.8112522686025408
+            }
+          },
+          "curva_todas": [
+            {
+              "umbral": 0.3,
+              "mostradas": 0.9150943396226415,
+              "acierto_mostradas": 0.6552119129438717
+            },
+            {
+              "umbral": 0.35,
+              "mostradas": 0.9035639412997903,
+              "acierto_mostradas": 0.6566125290023201
+            },
+            {
+              "umbral": 0.4,
+              "mostradas": 0.8815513626834381,
+              "acierto_mostradas": 0.6623067776456599
+            },
+            {
+              "umbral": 0.45,
+              "mostradas": 0.8553459119496856,
+              "acierto_mostradas": 0.6764705882352942
+            },
+            {
+              "umbral": 0.5,
+              "mostradas": 0.8134171907756813,
+              "acierto_mostradas": 0.6920103092783505
+            },
+            {
+              "umbral": 0.55,
+              "mostradas": 0.7589098532494759,
+              "acierto_mostradas": 0.7168508287292817
+            },
+            {
+              "umbral": 0.6,
+              "mostradas": 0.7033542976939203,
+              "acierto_mostradas": 0.7496274217585693
+            },
+            {
+              "umbral": 0.65,
+              "mostradas": 0.6635220125786163,
+              "acierto_mostradas": 0.7709320695102686
+            },
+            {
+              "umbral": 0.7,
+              "mostradas": 0.6215932914046122,
+              "acierto_mostradas": 0.7942664418212478
+            },
+            {
+              "umbral": 0.75,
+              "mostradas": 0.5775681341719078,
+              "acierto_mostradas": 0.8112522686025408
+            },
+            {
+              "umbral": 0.8,
+              "mostradas": 0.5377358490566038,
+              "acierto_mostradas": 0.8187134502923976
+            },
+            {
+              "umbral": 0.85,
+              "mostradas": 0.48427672955974843,
+              "acierto_mostradas": 0.8333333333333334
+            },
+            {
+              "umbral": 0.9,
+              "mostradas": 0.3972746331236897,
+              "acierto_mostradas": 0.8654353562005277
+            },
+            {
+              "umbral": 0.95,
+              "mostradas": 0.2672955974842767,
+              "acierto_mostradas": 0.8823529411764706
+            }
+          ]
+        },
+        "receta_mediana": {
+          "temperaturas": 1.2111692202171875,
+          "metricas": {
+            "P1": {
+              "n": 318,
+              "accuracy": 0.5062893081761006,
+              "ece": 0.19487483293372182,
+              "logloss": 1.6193303696852588,
+              "mostradas": 0.3805031446540881,
+              "n_mostradas": 121,
+              "confianza_media": 0.6884652229419344,
+              "confianza_media_mostradas": 0.8845651434002335,
+              "acierto_mostradas": 0.7851239669421488,
+              "mostradas_rango_semillas": [
+                0.2358490566037736,
+                0.4528301886792453
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.75,
+                0.84
+              ]
+            },
+            "P2": {
+              "n": 318,
+              "accuracy": 0.7169811320754716,
+              "ece": 0.15893381735829165,
+              "logloss": 1.0682330719497308,
+              "mostradas": 0.6855345911949685,
+              "n_mostradas": 218,
+              "confianza_media": 0.8236276946436456,
+              "confianza_media_mostradas": 0.9302646121180713,
+              "acierto_mostradas": 0.8119266055045872,
+              "mostradas_rango_semillas": [
+                0.6226415094339622,
+                0.7264150943396226
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.7066666666666667,
+                0.9090909090909091
+              ]
+            },
+            "P3": {
+              "n": 318,
+              "accuracy": 0.7264150943396226,
+              "ece": 0.14389388597621422,
+              "logloss": 1.191359348116272,
+              "mostradas": 0.660377358490566,
+              "n_mostradas": 210,
+              "confianza_media": 0.8352481679037329,
+              "confianza_media_mostradas": 0.9397794996916752,
+              "acierto_mostradas": 0.8333333333333334,
+              "mostradas_rango_semillas": [
+                0.6037735849056604,
+                0.7735849056603774
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.8170731707317073,
+                0.859375
+              ]
+            },
+            "todas": {
+              "n": 954,
+              "accuracy": 0.649895178197065,
+              "ece": 0.14632704302529395,
+              "logloss": 1.2929742632504206,
+              "mostradas": 0.5754716981132075,
+              "n_mostradas": 549,
+              "confianza_media": 0.7824470284964377,
+              "confianza_media_mostradas": 0.92383199039785,
+              "acierto_mostradas": 0.8142076502732241
+            }
+          },
+          "curva_todas": [
+            {
+              "umbral": 0.3,
+              "mostradas": 0.9150943396226415,
+              "acierto_mostradas": 0.6552119129438717
+            },
+            {
+              "umbral": 0.35,
+              "mostradas": 0.9025157232704403,
+              "acierto_mostradas": 0.6573751451800233
+            },
+            {
+              "umbral": 0.4,
+              "mostradas": 0.8815513626834381,
+              "acierto_mostradas": 0.6623067776456599
+            },
+            {
+              "umbral": 0.45,
+              "mostradas": 0.8532494758909853,
+              "acierto_mostradas": 0.6781326781326781
+            },
+            {
+              "umbral": 0.5,
+              "mostradas": 0.810272536687631,
+              "acierto_mostradas": 0.6934023285899095
+            },
+            {
+              "umbral": 0.55,
+              "mostradas": 0.7547169811320755,
+              "acierto_mostradas": 0.7208333333333333
+            },
+            {
+              "umbral": 0.6,
+              "mostradas": 0.69916142557652,
+              "acierto_mostradas": 0.7511244377811095
+            },
+            {
+              "umbral": 0.65,
+              "mostradas": 0.660377358490566,
+              "acierto_mostradas": 0.7746031746031746
+            },
+            {
+              "umbral": 0.7,
+              "mostradas": 0.6174004192872118,
+              "acierto_mostradas": 0.7945670628183361
+            },
+            {
+              "umbral": 0.75,
+              "mostradas": 0.5754716981132075,
+              "acierto_mostradas": 0.8142076502732241
+            },
+            {
+              "umbral": 0.8,
+              "mostradas": 0.5356394129979035,
+              "acierto_mostradas": 0.8180039138943248
+            },
+            {
+              "umbral": 0.85,
+              "mostradas": 0.4779874213836478,
+              "acierto_mostradas": 0.831140350877193
+            },
+            {
+              "umbral": 0.9,
+              "mostradas": 0.389937106918239,
+              "acierto_mostradas": 0.8655913978494624
+            },
+            {
+              "umbral": 0.95,
+              "mostradas": 0.2672955974842767,
+              "acierto_mostradas": 0.8823529411764706
+            }
+          ]
+        },
+        "receta_pliegue": {
+          "temperaturas": {
+            "0-P1": 1.0898984507764908,
+            "0-P2": 1.3311616573898546,
+            "0-P3": 1.2111692202171875,
+            "1-P1": 1.2324937866778936,
+            "1-P2": 1.5278476770357687,
+            "1-P3": 1.2661272019104923,
+            "2-P1": 1.0265025808694757,
+            "2-P2": 0.9096714040419837,
+            "2-P3": 1.0649697664108217
+          },
+          "metricas": {
+            "P1": {
+              "n": 318,
+              "accuracy": 0.5062893081761006,
+              "ece": 0.2064495398465493,
+              "logloss": 1.6924123671651556,
+              "mostradas": 0.3867924528301887,
+              "n_mostradas": 123,
+              "confianza_media": 0.7122515427134567,
+              "confianza_media_mostradas": 0.909256880159169,
+              "acierto_mostradas": 0.7886178861788617,
+              "mostradas_rango_semillas": [
+                0.22641509433962265,
+                0.4716981132075472
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.74,
+                0.875
+              ]
+            },
+            "P2": {
+              "n": 318,
+              "accuracy": 0.7169811320754716,
+              "ece": 0.12278444488214833,
+              "logloss": 1.03535703403497,
+              "mostradas": 0.6698113207547169,
+              "n_mostradas": 213,
+              "confianza_media": 0.8185286903869876,
+              "confianza_media_mostradas": 0.9302521168018978,
+              "acierto_mostradas": 0.812206572769953,
+              "mostradas_rango_semillas": [
+                0.6415094339622641,
+                0.6886792452830188
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.7205882352941176,
+                0.8767123287671232
+              ]
+            },
+            "P3": {
+              "n": 318,
+              "accuracy": 0.7264150943396226,
+              "ece": 0.15542242745976717,
+              "logloss": 1.2074264492501394,
+              "mostradas": 0.6855345911949685,
+              "n_mostradas": 218,
+              "confianza_media": 0.8417843071634659,
+              "confianza_media_mostradas": 0.9385665776045374,
+              "acierto_mostradas": 0.8165137614678899,
+              "mostradas_rango_semillas": [
+                0.6037735849056604,
+                0.7641509433962265
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.7808219178082192,
+                0.859375
+              ]
+            },
+            "todas": {
+              "n": 954,
+              "accuracy": 0.649895178197065,
+              "ece": 0.14853381881821856,
+              "logloss": 1.3117319501500881,
+              "mostradas": 0.5807127882599581,
+              "n_mostradas": 554,
+              "confianza_media": 0.7908548467546369,
+              "confianza_media_mostradas": 0.9288624748306338,
+              "acierto_mostradas": 0.8086642599277978
+            }
+          },
+          "curva_todas": [
+            {
+              "umbral": 0.3,
+              "mostradas": 0.9161425576519916,
+              "acierto_mostradas": 0.6556064073226545
+            },
+            {
+              "umbral": 0.35,
+              "mostradas": 0.9088050314465409,
+              "acierto_mostradas": 0.6551326412918108
+            },
+            {
+              "umbral": 0.4,
+              "mostradas": 0.8888888888888888,
+              "acierto_mostradas": 0.6627358490566038
+            },
+            {
+              "umbral": 0.45,
+              "mostradas": 0.8584905660377359,
+              "acierto_mostradas": 0.6752136752136753
+            },
+            {
+              "umbral": 0.5,
+              "mostradas": 0.8165618448637316,
+              "acierto_mostradas": 0.6919127086007703
+            },
+            {
+              "umbral": 0.55,
+              "mostradas": 0.7714884696016772,
+              "acierto_mostradas": 0.7105978260869565
+            },
+            {
+              "umbral": 0.6,
+              "mostradas": 0.7180293501048218,
+              "acierto_mostradas": 0.7401459854014598
+            },
+            {
+              "umbral": 0.65,
+              "mostradas": 0.6761006289308176,
+              "acierto_mostradas": 0.7627906976744186
+            },
+            {
+              "umbral": 0.7,
+              "mostradas": 0.6236897274633124,
+              "acierto_mostradas": 0.7932773109243697
+            },
+            {
+              "umbral": 0.75,
+              "mostradas": 0.5807127882599581,
+              "acierto_mostradas": 0.8086642599277978
+            },
+            {
+              "umbral": 0.8,
+              "mostradas": 0.5450733752620545,
+              "acierto_mostradas": 0.8173076923076923
+            },
+            {
+              "umbral": 0.85,
+              "mostradas": 0.5010482180293501,
+              "acierto_mostradas": 0.8347280334728033
+            },
+            {
+              "umbral": 0.9,
+              "mostradas": 0.4129979035639413,
+              "acierto_mostradas": 0.8705583756345178
+            },
+            {
+              "umbral": 0.95,
+              "mostradas": 0.2830188679245283,
+              "acierto_mostradas": 0.9074074074074074
+            }
+          ]
+        },
+        "cal_telefono": {
+          "temperaturas": {
+            "0-P1": 1.0898984507764908,
+            "0-P2": 1.8058035912098223,
+            "0-P3": 1.387497020966187,
+            "1-P1": 1.2324937866778936,
+            "1-P2": 2.0819042982875082,
+            "1-P3": 1.480929821419093,
+            "2-P1": 1.0265025808694757,
+            "2-P2": 1.2653194725869696,
+            "2-P3": 1.5341447476269405
+          },
+          "metricas": {
+            "P1": {
+              "n": 318,
+              "accuracy": 0.5062893081761006,
+              "ece": 0.2064495398465493,
+              "logloss": 1.6924123671651556,
+              "mostradas": 0.3867924528301887,
+              "n_mostradas": 123,
+              "confianza_media": 0.7122515427134567,
+              "confianza_media_mostradas": 0.909256880159169,
+              "acierto_mostradas": 0.7886178861788617,
+              "mostradas_rango_semillas": [
+                0.22641509433962265,
+                0.4716981132075472
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.74,
+                0.875
+              ]
+            },
+            "P2": {
+              "n": 318,
+              "accuracy": 0.7169811320754716,
+              "ece": 0.08593207616759184,
+              "logloss": 0.9561357039883281,
+              "mostradas": 0.5157232704402516,
+              "n_mostradas": 164,
+              "confianza_media": 0.7242014997698002,
+              "confianza_media_mostradas": 0.8887890928441472,
+              "acierto_mostradas": 0.8658536585365854,
+              "mostradas_rango_semillas": [
+                0.44339622641509435,
+                0.6037735849056604
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.8297872340425532,
+                0.90625
+              ]
+            },
+            "P3": {
+              "n": 318,
+              "accuracy": 0.7264150943396226,
+              "ece": 0.0933213041933257,
+              "logloss": 1.090773561495681,
+              "mostradas": 0.5943396226415094,
+              "n_mostradas": 189,
+              "confianza_media": 0.7860928112812635,
+              "confianza_media_mostradas": 0.9152453196714848,
+              "acierto_mostradas": 0.8518518518518519,
+              "mostradas_rango_semillas": [
+                0.5094339622641509,
+                0.6981132075471698
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.8378378378378378,
+                0.8703703703703703
+              ]
+            },
+            "todas": {
+              "n": 954,
+              "accuracy": 0.649895178197065,
+              "ece": 0.10602926732896717,
+              "logloss": 1.2464405442163882,
+              "mostradas": 0.4989517819706499,
+              "n_mostradas": 476,
+              "confianza_media": 0.7408486179215066,
+              "confianza_media_mostradas": 0.9045827161847241,
+              "acierto_mostradas": 0.8403361344537815
+            }
+          },
+          "curva_todas": [
+            {
+              "umbral": 0.3,
+              "mostradas": 0.909853249475891,
+              "acierto_mostradas": 0.6555299539170507
+            },
+            {
+              "umbral": 0.35,
+              "mostradas": 0.8962264150943396,
+              "acierto_mostradas": 0.6596491228070176
+            },
+            {
+              "umbral": 0.4,
+              "mostradas": 0.870020964360587,
+              "acierto_mostradas": 0.6674698795180722
+            },
+            {
+              "umbral": 0.45,
+              "mostradas": 0.8343815513626834,
+              "acierto_mostradas": 0.6809045226130653
+            },
+            {
+              "umbral": 0.5,
+              "mostradas": 0.7830188679245284,
+              "acierto_mostradas": 0.6974564926372155
+            },
+            {
+              "umbral": 0.55,
+              "mostradas": 0.7337526205450734,
+              "acierto_mostradas": 0.7214285714285714
+            },
+            {
+              "umbral": 0.6,
+              "mostradas": 0.6708595387840671,
+              "acierto_mostradas": 0.75625
+            },
+            {
+              "umbral": 0.65,
+              "mostradas": 0.6184486373165619,
+              "acierto_mostradas": 0.7847457627118644
+            },
+            {
+              "umbral": 0.7,
+              "mostradas": 0.5566037735849056,
+              "acierto_mostradas": 0.8097928436911488
+            },
+            {
+              "umbral": 0.75,
+              "mostradas": 0.4989517819706499,
+              "acierto_mostradas": 0.8403361344537815
+            },
+            {
+              "umbral": 0.8,
+              "mostradas": 0.44863731656184486,
+              "acierto_mostradas": 0.8434579439252337
+            },
+            {
+              "umbral": 0.85,
+              "mostradas": 0.37840670859538783,
+              "acierto_mostradas": 0.8642659279778393
+            },
+            {
+              "umbral": 0.9,
+              "mostradas": 0.2861635220125786,
+              "acierto_mostradas": 0.9047619047619048
+            },
+            {
+              "umbral": 0.95,
+              "mostradas": 0.15723270440251572,
+              "acierto_mostradas": 0.9466666666666667
+            }
+          ]
+        },
+        "anidada": {
+          "temperaturas": {
+            "0-P1": 1.8398264287717738,
+            "0-P2": 1.928978845293511,
+            "0-P3": 1.783794756940452,
+            "1-P1": 2.102998011301489,
+            "1-P2": 2.023846271522743,
+            "1-P3": 2.0843790523246577,
+            "2-P1": 1.6189885648050464,
+            "2-P2": 1.900396248534918,
+            "2-P3": 1.7345218211470783
+          },
+          "metricas": {
+            "P1": {
+              "n": 318,
+              "accuracy": 0.5062893081761006,
+              "ece": 0.1093392371603249,
+              "logloss": 1.462907080042453,
+              "mostradas": 0.1509433962264151,
+              "n_mostradas": 48,
+              "confianza_media": 0.5415397618633412,
+              "confianza_media_mostradas": 0.8107606777518779,
+              "acierto_mostradas": 0.8958333333333334,
+              "mostradas_rango_semillas": [
+                0.0,
+                0.25471698113207547
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.8148148148148148,
+                1.0
+              ]
+            },
+            "P2": {
+              "n": 318,
+              "accuracy": 0.7169811320754716,
+              "ece": 0.09871182657798572,
+              "logloss": 0.970673396439418,
+              "mostradas": 0.41823899371069184,
+              "n_mostradas": 133,
+              "confianza_media": 0.6722004847059899,
+              "confianza_media_mostradas": 0.8726325337920877,
+              "acierto_mostradas": 0.8646616541353384,
+              "mostradas_rango_semillas": [
+                0.29245283018867924,
+                0.4811320754716981
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.7843137254901961,
+                1.0
+              ]
+            },
+            "P3": {
+              "n": 318,
+              "accuracy": 0.7264150943396226,
+              "ece": 0.07230225665198747,
+              "logloss": 1.0318974778631032,
+              "mostradas": 0.4371069182389937,
+              "n_mostradas": 139,
+              "confianza_media": 0.7061022315474335,
+              "confianza_media_mostradas": 0.8868733904603737,
+              "acierto_mostradas": 0.8705035971223022,
+              "mostradas_rango_semillas": [
+                0.3867924528301887,
+                0.4811320754716981
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.8431372549019608,
+                0.9148936170212766
+              ]
+            },
+            "todas": {
+              "n": 954,
+              "accuracy": 0.649895178197065,
+              "ece": 0.04145408405514643,
+              "logloss": 1.1551593181149915,
+              "mostradas": 0.33542976939203356,
+              "n_mostradas": 320,
+              "confianza_media": 0.6399474927055882,
+              "confianza_media_mostradas": 0.869537627501343,
+              "acierto_mostradas": 0.871875
+            }
+          },
+          "curva_todas": [
+            {
+              "umbral": 0.3,
+              "mostradas": 0.8878406708595388,
+              "acierto_mostradas": 0.6611570247933884
+            },
+            {
+              "umbral": 0.35,
+              "mostradas": 0.8417190775681341,
+              "acierto_mostradas": 0.6799501867995019
+            },
+            {
+              "umbral": 0.4,
+              "mostradas": 0.7610062893081762,
+              "acierto_mostradas": 0.7148760330578512
+            },
+            {
+              "umbral": 0.45,
+              "mostradas": 0.7085953878406709,
+              "acierto_mostradas": 0.7455621301775148
+            },
+            {
+              "umbral": 0.5,
+              "mostradas": 0.6383647798742138,
+              "acierto_mostradas": 0.7832512315270936
+            },
+            {
+              "umbral": 0.55,
+              "mostradas": 0.5796645702306079,
+              "acierto_mostradas": 0.8119349005424955
+            },
+            {
+              "umbral": 0.6,
+              "mostradas": 0.5366876310272537,
+              "acierto_mostradas": 0.822265625
+            },
+            {
+              "umbral": 0.65,
+              "mostradas": 0.480083857442348,
+              "acierto_mostradas": 0.8318777292576419
+            },
+            {
+              "umbral": 0.7,
+              "mostradas": 0.40356394129979034,
+              "acierto_mostradas": 0.8623376623376623
+            },
+            {
+              "umbral": 0.75,
+              "mostradas": 0.33542976939203356,
+              "acierto_mostradas": 0.871875
+            },
+            {
+              "umbral": 0.8,
+              "mostradas": 0.2662473794549266,
+              "acierto_mostradas": 0.8818897637795275
+            },
+            {
+              "umbral": 0.85,
+              "mostradas": 0.1970649895178197,
+              "acierto_mostradas": 0.925531914893617
+            },
+            {
+              "umbral": 0.9,
+              "mostradas": 0.1331236897274633,
+              "acierto_mostradas": 0.952755905511811
+            },
+            {
+              "umbral": 0.95,
+              "mostradas": 0.040880503144654086,
+              "acierto_mostradas": 0.9743589743589743
+            }
+          ]
+        },
+        "oraculo": {
+          "temperaturas": {
+            "0-P1": 1.8702683093954746,
+            "0-P2": 1.7028843896384216,
+            "0-P3": 1.9866305542198837,
+            "1-P1": 1.995139023268861,
+            "1-P2": 2.162616332223781,
+            "1-P3": 2.0475552814244202,
+            "2-P1": 2.0384318473585625,
+            "2-P2": 1.4429476501890683,
+            "2-P3": 1.7808118447604355
+          },
+          "metricas": {
+            "P1": {
+              "n": 318,
+              "accuracy": 0.5062893081761006,
+              "ece": 0.11255887293397299,
+              "logloss": 1.4508789355525578,
+              "mostradas": 0.0880503144654088,
+              "n_mostradas": 28,
+              "confianza_media": 0.5177315832318491,
+              "confianza_media_mostradas": 0.7893920178332854,
+              "acierto_mostradas": 1.0,
+              "mostradas_rango_semillas": [
+                0.0,
+                0.18867924528301888
+              ],
+              "acierto_mostradas_rango_semillas": [
+                1.0,
+                1.0
+              ]
+            },
+            "P2": {
+              "n": 318,
+              "accuracy": 0.7169811320754716,
+              "ece": 0.07424109915360635,
+              "logloss": 0.9517315514266739,
+              "mostradas": 0.4748427672955975,
+              "n_mostradas": 151,
+              "confianza_media": 0.7134741378688154,
+              "confianza_media_mostradas": 0.8903432481819322,
+              "acierto_mostradas": 0.8609271523178808,
+              "mostradas_rango_semillas": [
+                0.44339622641509435,
+                0.5377358490566038
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.8297872340425532,
+                0.9148936170212766
+              ]
+            },
+            "P3": {
+              "n": 318,
+              "accuracy": 0.7264150943396226,
+              "ece": 0.08526048611193626,
+              "logloss": 1.0289907043102822,
+              "mostradas": 0.42452830188679247,
+              "n_mostradas": 135,
+              "confianza_media": 0.6923471334452849,
+              "confianza_media_mostradas": 0.877897454807467,
+              "acierto_mostradas": 0.8814814814814815,
+              "mostradas_rango_semillas": [
+                0.330188679245283,
+                0.4811320754716981
+              ],
+              "acierto_mostradas_rango_semillas": [
+                0.8571428571428571,
+                0.9215686274509803
+              ]
+            },
+            "todas": {
+              "n": 954,
+              "accuracy": 0.649895178197065,
+              "ece": 0.05249844324693452,
+              "logloss": 1.1438670637631712,
+              "mostradas": 0.32914046121593293,
+              "n_mostradas": 314,
+              "confianza_media": 0.6411842848486498,
+              "confianza_media_mostradas": 0.8759903292159611,
+              "acierto_mostradas": 0.8821656050955414
+            }
+          },
+          "curva_todas": [
+            {
+              "umbral": 0.3,
+              "mostradas": 0.8773584905660378,
+              "acierto_mostradas": 0.6630824372759857
+            },
+            {
+              "umbral": 0.35,
+              "mostradas": 0.8301886792452831,
+              "acierto_mostradas": 0.6957070707070707
+            },
+            {
+              "umbral": 0.4,
+              "mostradas": 0.7662473794549266,
+              "acierto_mostradas": 0.7250341997264022
+            },
+            {
+              "umbral": 0.45,
+              "mostradas": 0.709643605870021,
+              "acierto_mostradas": 0.7518463810930576
+            },
+            {
+              "umbral": 0.5,
+              "mostradas": 0.6341719077568134,
+              "acierto_mostradas": 0.7851239669421488
+            },
+            {
+              "umbral": 0.55,
+              "mostradas": 0.5807127882599581,
+              "acierto_mostradas": 0.8104693140794224
+            },
+            {
+              "umbral": 0.6,
+              "mostradas": 0.5377358490566038,
+              "acierto_mostradas": 0.8323586744639376
+            },
+            {
+              "umbral": 0.65,
+              "mostradas": 0.48846960167714887,
+              "acierto_mostradas": 0.8497854077253219
+            },
+            {
+              "umbral": 0.7,
+              "mostradas": 0.40146750524109015,
+              "acierto_mostradas": 0.8694516971279374
+            },
+            {
+              "umbral": 0.75,
+              "mostradas": 0.32914046121593293,
+              "acierto_mostradas": 0.8821656050955414
+            },
+            {
+              "umbral": 0.8,
+              "mostradas": 0.27253668763102723,
+              "acierto_mostradas": 0.8807692307692307
+            },
+            {
+              "umbral": 0.85,
+              "mostradas": 0.20859538784067086,
+              "acierto_mostradas": 0.8994974874371859
+            },
+            {
+              "umbral": 0.9,
+              "mostradas": 0.13522012578616352,
+              "acierto_mostradas": 0.9689922480620154
+            },
+            {
+              "umbral": 0.95,
+              "mostradas": 0.0660377358490566,
+              "acierto_mostradas": 1.0
+            }
+          ]
+        },
+        "_t_lopo_todas": 1.890814638978132
+      },
+      "composicion_calibracion": {
+        "0-P1": {
+          "n": 43,
+          "fuente": {
+            "telefono": 43
+          },
+          "persona": {
+            "P2": 26,
+            "P3": 17
+          }
+        },
+        "0-P2": {
+          "n": 261,
+          "fuente": {
+            "webcam": 218,
+            "telefono": 43
+          },
+          "persona": {
+            "P1": 241,
+            "P3": 20
+          }
+        },
+        "0-P3": {
+          "n": 261,
+          "fuente": {
+            "webcam": 218,
+            "telefono": 43
+          },
+          "persona": {
+            "P1": 241,
+            "P2": 20
+          }
+        },
+        "1-P1": {
+          "n": 43,
+          "fuente": {
+            "telefono": 43
+          },
+          "persona": {
+            "P2": 27,
+            "P3": 16
+          }
+        },
+        "1-P2": {
+          "n": 261,
+          "fuente": {
+            "telefono": 39,
+            "webcam": 222
+          },
+          "persona": {
+            "P1": 240,
+            "P3": 21
+          }
+        },
+        "1-P3": {
+          "n": 261,
+          "fuente": {
+            "telefono": 39,
+            "webcam": 222
+          },
+          "persona": {
+            "P1": 240,
+            "P2": 21
+          }
+        },
+        "2-P1": {
+          "n": 43,
+          "fuente": {
+            "telefono": 43
+          },
+          "persona": {
+            "P2": 21,
+            "P3": 22
+          }
+        },
+        "2-P2": {
+          "n": 261,
+          "fuente": {
+            "webcam": 223,
+            "telefono": 38
+          },
+          "persona": {
+            "P1": 244,
+            "P3": 17
+          }
+        },
+        "2-P3": {
+          "n": 261,
+          "fuente": {
+            "webcam": 223,
+            "telefono": 38
+          },
+          "persona": {
+            "P1": 244,
+            "P2": 17
+          }
+        }
+      }
+    }
+  }
+}

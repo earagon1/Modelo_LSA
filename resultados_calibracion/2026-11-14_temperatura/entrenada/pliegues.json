@@ -1,0 +1,74 @@
+[
+  {
+    "semilla": 0,
+    "persona": "P1",
+    "temperatura": 1.0898984507764908,
+    "temperatura_cal_telefono": 1.0898984507764908,
+    "n_cal": 43,
+    "n_cal_telefono": 43
+  },
+  {
+    "semilla": 0,
+    "persona": "P2",
+    "temperatura": 1.3311616573898546,
+    "temperatura_cal_telefono": 1.8058035912098223,
+    "n_cal": 261,
+    "n_cal_telefono": 43
+  },
+  {
+    "semilla": 0,
+    "persona": "P3",
+    "temperatura": 1.2111692202171875,
+    "temperatura_cal_telefono": 1.387497020966187,
+    "n_cal": 261,
+    "n_cal_telefono": 43
+  },
+  {
+    "semilla": 1,
+    "persona": "P1",
+    "temperatura": 1.2324937866778936,
+    "temperatura_cal_telefono": 1.2324937866778936,
+    "n_cal": 43,
+    "n_cal_telefono": 43
+  },
+  {
+    "semilla": 1,
+    "persona": "P2",
+    "temperatura": 1.5278476770357687,
+    "temperatura_cal_telefono": 2.0819042982875082,
+    "n_cal": 261,
+    "n_cal_telefono": 39
+  },
+  {
+    "semilla": 1,
+    "persona": "P3",
+    "temperatura": 1.2661272019104923,
+    "temperatura_cal_telefono": 1.480929821419093,
+    "n_cal": 261,
+    "n_cal_telefono": 39
+  },
+  {
+    "semilla": 2,
+    "persona": "P1",
+    "temperatura": 1.0265025808694757,
+    "temperatura_cal_telefono": 1.0265025808694757,
+    "n_cal": 43,
+    "n_cal_telefono": 43
+  },
+  {
+    "semilla": 2,
+    "persona": "P2",
+    "temperatura": 0.9096714040419837,
+    "temperatura_cal_telefono": 1.2653194725869696,
+    "n_cal": 261,
+    "n_cal_telefono": 38
+  },
+  {
+    "semilla": 2,
+    "persona": "P3",
+    "temperatura": 1.0649697664108217,
+    "temperatura_cal_telefono": 1.5341447476269405,
+    "n_cal": 261,
+    "n_cal_telefono": 38
+  }
+]

@@ -1,0 +1,642 @@
+{
+  "telefono_por_dispositivo": [
+    {
+      "dispositivo": "LENOVO TB321FU",
+      "persona": "P1",
+      "tomas": 154,
+      "duracion_ms": {
+        "n": 154,
+        "mediana": 876.0,
+        "min": 782.0,
+        "max": 1331.0,
+        "p10": 835.3,
+        "p90": 1133.2000000000003
+      },
+      "entre_primero_y_ultimo_ms": {
+        "n": 154,
+        "mediana": 819.0,
+        "min": 731.0,
+        "max": 1250.0,
+        "p10": 779.3,
+        "p90": 1057.1000000000001
+      },
+      "fps": {
+        "n": 154,
+        "mediana": 17.123,
+        "min": 11.27,
+        "max": 19.182,
+        "p10": 13.2374,
+        "p90": 17.9577
+      },
+      "n_frames": {
+        "15": 154
+      },
+      "tomas_con_frames_sin_mano": 0
+    },
+    {
+      "dispositivo": "OnePlus CPH2663",
+      "persona": "P2",
+      "tomas": 153,
+      "duracion_ms": {
+        "n": 153,
+        "mediana": 1402.0,
+        "min": 1075.0,
+        "max": 2285.0,
+        "p10": 1242.6,
+        "p90": 1919.8000000000002
+      },
+      "entre_primero_y_ultimo_ms": {
+        "n": 153,
+        "mediana": 1264.0,
+        "min": 988.0,
+        "max": 2138.0,
+        "p10": 1122.2,
+        "p90": 1795.0000000000002
+      },
+      "fps": {
+        "n": 153,
+        "mediana": 7.553,
+        "min": 5.568,
+        "max": 13.953,
+        "p10": 6.766,
+        "p90": 8.721
+      },
+      "n_frames": {
+        "10": 104,
+        "15": 49
+      },
+      "tomas_con_frames_sin_mano": 0
+    },
+    {
+      "dispositivo": "samsung SM-A556E",
+      "persona": "P3",
+      "tomas": 142,
+      "duracion_ms": {
+        "n": 142,
+        "mediana": 1617.5,
+        "min": 825.0,
+        "max": 2882.0,
+        "p10": 1404.4,
+        "p90": 2029.4000000000003
+      },
+      "entre_primero_y_ultimo_ms": {
+        "n": 142,
+        "mediana": 1452.5,
+        "min": 751.0,
+        "max": 2697.0,
+        "p10": 1277.9,
+        "p90": 1825.0000000000002
+      },
+      "fps": {
+        "n": 142,
+        "mediana": 6.2675,
+        "min": 4.771,
+        "max": 12.121,
+        "p10": 5.3257,
+        "p90": 7.164000000000001
+      },
+      "n_frames": {
+        "10": 131,
+        "15": 11
+      },
+      "tomas_con_frames_sin_mano": 0
+    }
+  ],
+  "telefono_por_bloque": [
+    {
+      "dispositivo": "LENOVO TB321FU",
+      "persona": "P1",
+      "bloque": "A",
+      "tomas": 96,
+      "duracion_ms": {
+        "n": 96,
+        "mediana": 874.5,
+        "min": 834.0,
+        "max": 1331.0,
+        "p10": 846.5,
+        "p90": 1094.5
+      },
+      "entre_primero_y_ultimo_ms": {
+        "n": 96,
+        "mediana": 819.0,
+        "min": 776.0,
+        "max": 1250.0,
+        "p10": 785.5,
+        "p90": 1030.0
+      },
+      "fps": {
+        "n": 96,
+        "mediana": 17.1525,
+        "min": 11.27,
+        "max": 17.986,
+        "p10": 13.707999999999998,
+        "p90": 17.72
+      },
+      "n_frames": {
+        "15": 96
+      },
+      "tomas_con_frames_sin_mano": 0
+    },
+    {
+      "dispositivo": "LENOVO TB321FU",
+      "persona": "P1",
+      "bloque": "B",
+      "tomas": 48,
+      "duracion_ms": {
+        "n": 48,
+        "mediana": 899.5,
+        "min": 782.0,
+        "max": 1322.0,
+        "p10": 810.4,
+        "p90": 1085.6000000000001
+      },
+      "entre_primero_y_ultimo_ms": {
+        "n": 48,
+        "mediana": 838.5,
+        "min": 731.0,
+        "max": 1250.0,
+        "p10": 755.8,
+        "p90": 1029.9
+      },
+      "fps": {
+        "n": 48,
+        "mediana": 16.676000000000002,
+        "min": 11.346,
+        "max": 19.182,
+        "p10": 13.824,
+        "p90": 18.5095
+      },
+      "n_frames": {
+        "15": 48
+      },
+      "tomas_con_frames_sin_mano": 0
+    },
+    {
+      "dispositivo": "LENOVO TB321FU",
+      "persona": "P1",
+      "bloque": "N",
+      "tomas": 10,
+      "duracion_ms": {
+        "n": 10,
+        "mediana": 876.5,
+        "min": 847.0,
+        "max": 1320.0,
+        "p10": 847.9,
+        "p90": 1254.3
+      },
+      "entre_primero_y_ultimo_ms": {
+        "n": 10,
+        "mediana": 819.5,
+        "min": 790.0,
+        "max": 1212.0,
+        "p10": 791.8,
+        "p90": 1165.2
+      },
+      "fps": {
+        "n": 10,
+        "mediana": 17.113500000000002,
+        "min": 11.364,
+        "max": 17.71,
+        "p10": 11.9625,
+        "p90": 17.6911
+      },
+      "n_frames": {
+        "15": 10
+      },
+      "tomas_con_frames_sin_mano": 0
+    },
+    {
+      "dispositivo": "OnePlus CPH2663",
+      "persona": "P2",
+      "bloque": "A",
+      "tomas": 96,
+      "duracion_ms": {
+        "n": 96,
+        "mediana": 1455.0,
+        "min": 1075.0,
+        "max": 2285.0,
+        "p10": 1231.0,
+        "p90": 1945.0
+      },
+      "entre_primero_y_ultimo_ms": {
+        "n": 96,
+        "mediana": 1338.0,
+        "min": 988.0,
+        "max": 2138.0,
+        "p10": 1100.5,
+        "p90": 1825.5
+      },
+      "fps": {
+        "n": 96,
+        "mediana": 7.76,
+        "min": 6.131,
+        "max": 13.953,
+        "p10": 6.9915,
+        "p90": 8.8905
+      },
+      "n_frames": {
+        "10": 52,
+        "15": 44
+      },
+      "tomas_con_frames_sin_mano": 0
+    },
+    {
+      "dispositivo": "OnePlus CPH2663",
+      "persona": "P2",
+      "bloque": "B",
+      "tomas": 47,
+      "duracion_ms": {
+        "n": 47,
+        "mediana": 1390.0,
+        "min": 1183.0,
+        "max": 2143.0,
+        "p10": 1286.4,
+        "p90": 1840.3999999999999
+      },
+      "entre_primero_y_ultimo_ms": {
+        "n": 47,
+        "mediana": 1254.0,
+        "min": 1063.0,
+        "max": 1995.0,
+        "p10": 1154.2,
+        "p90": 1668.5999999999997
+      },
+      "fps": {
+        "n": 47,
+        "mediana": 7.215,
+        "min": 5.568,
+        "max": 8.453,
+        "p10": 6.6824,
+        "p90": 7.8522
+      },
+      "n_frames": {
+        "10": 42,
+        "15": 5
+      },
+      "tomas_con_frames_sin_mano": 0
+    },
+    {
+      "dispositivo": "OnePlus CPH2663",
+      "persona": "P2",
+      "bloque": "N",
+      "tomas": 10,
+      "duracion_ms": {
+        "n": 10,
+        "mediana": 1399.0,
+        "min": 1279.0,
+        "max": 1630.0,
+        "p10": 1308.7,
+        "p90": 1545.3999999999999
+      },
+      "entre_primero_y_ultimo_ms": {
+        "n": 10,
+        "mediana": 1247.0,
+        "min": 1123.0,
+        "max": 1439.0,
+        "p10": 1167.1,
+        "p90": 1362.5
+      },
+      "fps": {
+        "n": 10,
+        "mediana": 7.148,
+        "min": 6.135,
+        "max": 7.819,
+        "p10": 6.4725,
+        "p90": 7.6417
+      },
+      "n_frames": {
+        "10": 10
+      },
+      "tomas_con_frames_sin_mano": 0
+    },
+    {
+      "dispositivo": "samsung SM-A556E",
+      "persona": "P3",
+      "bloque": "A",
+      "tomas": 96,
+      "duracion_ms": {
+        "n": 96,
+        "mediana": 1608.5,
+        "min": 825.0,
+        "max": 2882.0,
+        "p10": 1373.0,
+        "p90": 1966.5
+      },
+      "entre_primero_y_ultimo_ms": {
+        "n": 96,
+        "mediana": 1446.0,
+        "min": 751.0,
+        "max": 2697.0,
+        "p10": 1251.5,
+        "p90": 1771.0
+      },
+      "fps": {
+        "n": 96,
+        "mediana": 6.287,
+        "min": 4.785,
+        "max": 12.121,
+        "p10": 5.436,
+        "p90": 7.404999999999999
+      },
+      "n_frames": {
+        "10": 87,
+        "15": 9
+      },
+      "tomas_con_frames_sin_mano": 0
+    },
+    {
+      "dispositivo": "samsung SM-A556E",
+      "persona": "P3",
+      "bloque": "B",
+      "tomas": 36,
+      "duracion_ms": {
+        "n": 36,
+        "mediana": 1619.5,
+        "min": 1395.0,
+        "max": 2527.0,
+        "p10": 1495.5,
+        "p90": 1905.0
+      },
+      "entre_primero_y_ultimo_ms": {
+        "n": 36,
+        "mediana": 1462.0,
+        "min": 1267.0,
+        "max": 2386.0,
+        "p10": 1343.0,
+        "p90": 1740.0
+      },
+      "fps": {
+        "n": 36,
+        "mediana": 6.175,
+        "min": 4.771,
+        "max": 7.168,
+        "p10": 5.386,
+        "p90": 6.686999999999999
+      },
+      "n_frames": {
+        "10": 35,
+        "15": 1
+      },
+      "tomas_con_frames_sin_mano": 0
+    },
+    {
+      "dispositivo": "samsung SM-A556E",
+      "persona": "P3",
+      "bloque": "N",
+      "tomas": 10,
+      "duracion_ms": {
+        "n": 10,
+        "mediana": 1679.0,
+        "min": 1078.0,
+        "max": 2482.0,
+        "p10": 1468.6,
+        "p90": 2118.3999999999996
+      },
+      "entre_primero_y_ultimo_ms": {
+        "n": 10,
+        "mediana": 1526.0,
+        "min": 948.0,
+        "max": 2318.0,
+        "p10": 1313.4,
+        "p90": 1925.6
+      },
+      "fps": {
+        "n": 10,
+        "mediana": 6.0485,
+        "min": 4.812,
+        "max": 9.276,
+        "p10": 4.902,
+        "p90": 6.8801999999999985
+      },
+      "n_frames": {
+        "10": 9,
+        "15": 1
+      },
+      "tomas_con_frames_sin_mano": 0
+    }
+  ],
+  "telefono_por_n_frames": [
+    {
+      "dispositivo": "LENOVO TB321FU",
+      "n_frames": {
+        "15": 154
+      },
+      "tomas": 154,
+      "duracion_ms": {
+        "n": 154,
+        "mediana": 876.0,
+        "min": 782.0,
+        "max": 1331.0,
+        "p10": 835.3,
+        "p90": 1133.2000000000003
+      },
+      "entre_primero_y_ultimo_ms": {
+        "n": 154,
+        "mediana": 819.0,
+        "min": 731.0,
+        "max": 1250.0,
+        "p10": 779.3,
+        "p90": 1057.1000000000001
+      },
+      "fps": {
+        "n": 154,
+        "mediana": 17.123,
+        "min": 11.27,
+        "max": 19.182,
+        "p10": 13.2374,
+        "p90": 17.9577
+      },
+      "tomas_con_frames_sin_mano": 0
+    },
+    {
+      "dispositivo": "OnePlus CPH2663",
+      "n_frames": {
+        "10": 104
+      },
+      "tomas": 104,
+      "duracion_ms": {
+        "n": 104,
+        "mediana": 1356.0,
+        "min": 1107.0,
+        "max": 1796.0,
+        "p10": 1216.8,
+        "p90": 1535.1
+      },
+      "entre_primero_y_ultimo_ms": {
+        "n": 104,
+        "mediana": 1222.5,
+        "min": 988.0,
+        "max": 1595.0,
+        "p10": 1100.3,
+        "p90": 1375.1
+      },
+      "fps": {
+        "n": 104,
+        "mediana": 7.375,
+        "min": 5.568,
+        "max": 9.033,
+        "p10": 6.5139,
+        "p90": 8.2186
+      },
+      "tomas_con_frames_sin_mano": 0
+    },
+    {
+      "dispositivo": "OnePlus CPH2663",
+      "n_frames": {
+        "15": 49
+      },
+      "tomas": 49,
+      "duracion_ms": {
+        "n": 49,
+        "mediana": 1795.0,
+        "min": 1075.0,
+        "max": 2285.0,
+        "p10": 1651.2,
+        "p90": 2104.6000000000004
+      },
+      "entre_primero_y_ultimo_ms": {
+        "n": 49,
+        "mediana": 1670.0,
+        "min": 1000.0,
+        "max": 2138.0,
+        "p10": 1544.0,
+        "p90": 1960.4
+      },
+      "fps": {
+        "n": 49,
+        "mediana": 8.357,
+        "min": 6.565,
+        "max": 13.953,
+        "p10": 7.128,
+        "p90": 9.0844
+      },
+      "tomas_con_frames_sin_mano": 0
+    },
+    {
+      "dispositivo": "samsung SM-A556E",
+      "n_frames": {
+        "10": 131
+      },
+      "tomas": 131,
+      "duracion_ms": {
+        "n": 131,
+        "mediana": 1591.0,
+        "min": 825.0,
+        "max": 2096.0,
+        "p10": 1395.0,
+        "p90": 1879.0
+      },
+      "entre_primero_y_ultimo_ms": {
+        "n": 131,
+        "mediana": 1437.0,
+        "min": 751.0,
+        "max": 1922.0,
+        "p10": 1274.0,
+        "p90": 1676.0
+      },
+      "fps": {
+        "n": 131,
+        "mediana": 6.285,
+        "min": 4.771,
+        "max": 12.121,
+        "p10": 5.322,
+        "p90": 7.168
+      },
+      "tomas_con_frames_sin_mano": 0
+    },
+    {
+      "dispositivo": "samsung SM-A556E",
+      "n_frames": {
+        "15": 11
+      },
+      "tomas": 11,
+      "duracion_ms": {
+        "n": 11,
+        "mediana": 2413.0,
+        "min": 1466.0,
+        "max": 2882.0,
+        "p10": 2239.0,
+        "p90": 2579.0
+      },
+      "entre_primero_y_ultimo_ms": {
+        "n": 11,
+        "mediana": 2246.0,
+        "min": 1315.0,
+        "max": 2697.0,
+        "p10": 2110.0,
+        "p90": 2386.0
+      },
+      "fps": {
+        "n": 11,
+        "mediana": 6.216,
+        "min": 5.205,
+        "max": 10.232,
+        "p10": 5.816,
+        "p90": 6.699
+      },
+      "tomas_con_frames_sin_mano": 0
+    }
+  ],
+  "webcam_campos_v2": [
+    {
+      "dispositivo": "webcam PC",
+      "tomas": 1200,
+      "duracion_ms": {
+        "n": 1200,
+        "mediana": 500.0,
+        "min": 433.0,
+        "max": 500.0,
+        "p10": 500.0,
+        "p90": 500.0
+      },
+      "entre_primero_y_ultimo_ms": {
+        "n": 1200,
+        "mediana": 467.0,
+        "min": 400.0,
+        "max": 467.0,
+        "p10": 467.0,
+        "p90": 467.0
+      },
+      "fps": {
+        "n": 1200,
+        "mediana": 30.0,
+        "min": 30.0,
+        "max": 30.0,
+        "p10": 30.0,
+        "p90": 30.0
+      },
+      "n_frames": {
+        "13": 3,
+        "14": 6,
+        "15": 1191
+      },
+      "tomas_con_frames_sin_mano": 919
+    }
+  ],
+  "webcam_cota_superior_s_por_anio": {
+    "2024": {
+      "n": 746,
+      "mediana": 3.4238555,
+      "min": 1.748835,
+      "max": 53.061708,
+      "p10": 2.412877,
+      "p90": 24.411727999999997
+    },
+    "2025": {
+      "n": 139,
+      "mediana": 13.172443,
+      "min": 2.421479,
+      "max": 57.73093,
+      "p10": 2.8056516,
+      "p90": 32.0490988
+    },
+    "2026": {
+      "n": 218,
+      "mediana": 3.8563465,
+      "min": 2.145672,
+      "max": 56.378303,
+      "p10": 2.5785175000000002,
+      "p90": 34.4782
+    }
+  }
+}
