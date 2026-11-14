@@ -7,6 +7,7 @@ from sklearn.model_selection import train_test_split
 from keras.utils import to_categorical
 from helpers import get_word_ids, get_sequences_and_labels, load_lsa_json
 from constants import *
+from lsa.guarda import clases_sin_tomas, exigir_permiso, existentes
 
 # Ruta por defecto del JSON; si lo tenés en otro lado, cambiá aquí o pásalo por argv si querés
 LSA_JSON_PATH = "lsa_samples.json"
@@ -35,6 +36,15 @@ def training_model(model_path, epochs=500):
     except FileNotFoundError:
         sequences_json, labels_txt_json = [], []
         print("[WARN] No se encontró lsa_samples.json; entreno solo con H5.")
+
+    # Una clase de words.json sin ninguna toma (le falta el .h5 y no está en el JSON)
+    # dejaría una salida del modelo sin entrenar. Se corta acá, antes de escribir
+    # words.json o el modelo (ML-M11).
+    sin_tomas = clases_sin_tomas(word_ids, labels_txt_h5 + list(labels_txt_json))
+    if sin_tomas:
+        raise SystemExit(f"Clases de words.json sin ninguna toma: {sin_tomas}. "
+                         "Falta su .h5 en data/keypoints/ o sus muestras en lsa_samples.json; "
+                         "no se entrena ni se escribe nada.")
 
     # 4) Si el JSON trae etiquetas nuevas, las agrego a words.json (al final)
     if labels_txt_json:
@@ -83,4 +93,8 @@ def training_model(model_path, epochs=500):
     print("[OK] Modelo guardado en:", model_path)
 
 if __name__ == "__main__":
+    # Sobrescribe el modelo de models/ y puede reescribir words.json, que es el
+    # índice de salida del modelo publicado (ML-M11).
+    exigir_permiso("training_model.py", existentes([MODEL_PATH, WORDS_JSON_PATH]),
+                   "python scripts/entrenar_final.py (escribe en runs/<fecha>_final/ y no toca models/)")
     training_model(MODEL_PATH)

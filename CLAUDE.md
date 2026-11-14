@@ -52,6 +52,7 @@ $PY federated/cliente_emulado.py --servidor https://<ip>:8765 --persona P2 --ron
 - `runs/<fecha>_*/`: modelos entrenados y exportados. El publicado en la app sale de `runs/2026-10-16_final` (1409 tomas: 1091 de webcam y 318 de teléfonos, 13 clases); el original, entrenado solo con la webcam, está en `referencia/`.
 
 ## Lo que NO se hace (pierde datos o rompe el modelo)
+Los cuatro primeros scripts tienen una guarda (`lsa/guarda.py`): si hay algo que pisar, cortan antes de tocarlo y solo siguen con `--pisar`. **No pasar `--pisar` sin respaldar antes y sin el OK de Evelin.**
 - **Nunca correr `normalize_samples.py`**: borra frames con `os.remove`.
 - **`create_keypoints.py` sobrescribe todos los `.h5`** y lee los frames sin ordenar (`helpers.py:91`). No correrlo sin un respaldo previo.
 - **`training_model.py` y `export_tflite.py` sobrescriben el modelo de producción** (`models/`), y `training_model.py` además **reescribe `models/words.json`** con las etiquetas que encuentre en `lsa_samples.json`. Respaldar `models/` antes.

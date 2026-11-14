@@ -141,6 +141,11 @@ def clear_directory(directory):
             shutil.rmtree(file_path)
 
 if __name__ == "__main__":
+    # Borra los frames que sobran de cada toma: no hay forma de recuperarlos (ML-M11).
+    from lsa.guarda import exigir_permiso, existentes
+    exigir_permiso("normalize_samples.py", existentes([FRAME_ACTIONS_PATH]),
+                   "las tomas se leen sin modificarlas con lsa/extractor.py y lsa/dataset_v2.py")
+
     # GENERAR PARA TODAS LAS PALABRAS
     word_ids = [word for word in os.listdir(os.path.join(ROOT_PATH, FRAME_ACTIONS_PATH))]
     

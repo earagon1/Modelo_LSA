@@ -95,6 +95,11 @@ def main():
     ap.add_argument("--batch", type=int, default=64)
     args = ap.parse_args()
 
+    # No pisa nada (escribe en una carpeta nueva), pero su modelo no sirve para la app:
+    # arma las etiquetas en orden alfabético y no en el de words.json (ML-M11).
+    print("[AVISO] Script heredado: las clases salen en orden alfabético, no en el de words.json. "
+          "El modelo que deja no se puede publicar en la app; para eso, scripts/entrenar_final.py.")
+
     # salida por fecha/hora si no se especifica
     stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
     outdir = Path(args.outdir) if args.outdir else Path("models/out") / f"finetune_{stamp}"

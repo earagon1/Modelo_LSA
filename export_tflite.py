@@ -18,6 +18,7 @@ from constants import (
     WORDS_JSON_PATH, KEYPOINTS_PATH,
 )
 from helpers import get_sequences_and_labels, get_word_ids
+from lsa.guarda import exigir_permiso, existentes
 
 
 # --- Normalización temporal coherente con evaluate_model/main (T=15 por defecto) ---
@@ -80,6 +81,11 @@ def _enable_select_tf_ops(converter: tf.lite.TFLiteConverter):
 
 
 def main():
+    # Sobrescribe los tres .tflite de models/, con ops Flex, que la app ya no carga (ML-M11).
+    exigir_permiso("export_tflite.py",
+                   existentes([os.path.join(MODEL_FOLDER_PATH, f"actions_{MODEL_FRAMES}{sufijo}.tflite")
+                               for sufijo in ("", "_opt", "_int8")]),
+                   "python scripts/entrenar_final.py exporta sin Flex con lsa/export.py, en runs/<fecha>_final/")
     os.makedirs(MODEL_FOLDER_PATH, exist_ok=True)
 
     # 1) Cargar el modelo .keras entrenado

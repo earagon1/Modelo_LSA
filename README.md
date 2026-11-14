@@ -84,6 +84,8 @@ En la raíz quedan los scripts del primer pipeline, que trabajaba solo con la c�
 - `training_model.py` y `export_tflite.py` sobrescriben `models/`, y el primero reescribe `words.json`.
 - `finetune_from_lsa_json.py` arma las etiquetas en orden alfabético y cruza las clases.
 
+Los cuatro primeros tienen una guarda (`lsa/guarda.py`): si encuentran datos que pisarían, cortan sin tocar nada, dicen qué archivos son y qué usar en su lugar, y solo siguen con la bandera `--pisar`. `training_model.py` además no entrena si una clase de `words.json` no tiene ninguna toma.
+
 `capture_samples.py` sigue sirviendo para grabar con la cámara web, y `model.py` define la arquitectura que usan los scripts nuevos. El detalle de qué no correr está en `CLAUDE.md`.
 
 ---

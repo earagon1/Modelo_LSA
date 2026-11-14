@@ -37,7 +37,13 @@ if __name__ == "__main__":
     # GENERAR PARA UNA PALABRA O CONJUNTO
     # word_ids = ["bien"]
     # word_ids = ["buenos_dias", "como_estas", "disculpa", "gracias", "hola-der", "hola-izq", "mal", "mas_o_menos", "me_ayudas", "por_favor"]
-    
+
+    # Cada .h5 se abre con mode="w": el que ya existe se pierde entero (ML-M11).
+    from lsa.guarda import exigir_permiso, existentes
+    exigir_permiso("create_keypoints.py",
+                   existentes([os.path.join(KEYPOINTS_PATH, f"{w}.h5") for w in word_ids]),
+                   "los landmarks de la webcam ya están re-extraídos en data/landmarks/webcam_v2.jsonl")
+
     for word_id in word_ids:
         hdf_path = os.path.join(KEYPOINTS_PATH, f"{word_id}.h5")
         create_keypoints(word_id, FRAME_ACTIONS_PATH, hdf_path)
