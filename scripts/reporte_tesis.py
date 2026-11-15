@@ -7,7 +7,8 @@ el capítulo de resultados, siempre desde los JSON de las corridas, nunca a mano
   2. La fuga del esquema viejo, cuantificada contra la validación por persona.
   3. Accuracy por persona y F1 por seña: modelo original contra el nuevo (LOPO).
   4. La comparativa de la sesión de captura por dispositivo (resumen_captura.py).
-  5. El federado con personas reales y la calibración (sus corridas más reciente).
+  5. El federado con personas reales (su corrida más reciente) y la calibración: primero la
+     corrida de la que sale lo publicado en la app (`calibracion_app.json`), después las demás.
   6. La robustez por condición de la sesión 2 (robustez.py, su corrida más reciente).
   7. La métrica de consistencia σ de la propuesta (consistencia.py).
 
@@ -43,6 +44,33 @@ def fila_escenario(r):
     return pct(r["global"]["accuracy"]), pct(r["global"]["f1_macro"])
 
 
+def corridas_de_calibracion(carpeta):
+    """Las corridas de calibración en el orden del informe: la publicada primero.
+
+    La más reciente no es la que usa la app: las corridas posteriores repiten o estudian el
+    procedimiento sin republicar. Devuelve [(ruta, es_la_publicada)].
+    """
+    corridas = sorted(glob.glob(os.path.join(carpeta, "20*")))
+    publicada = None
+    app = os.path.join(carpeta, "calibracion_app.json")
+    if os.path.exists(app):
+        with open(app, encoding="utf-8") as f:
+            publicada = os.path.basename(json.load(f).get("origen", "").rstrip("/"))
+    orden = sorted(corridas, key=lambda c: os.path.basename(c) != publicada)
+    return [(c, os.path.basename(c) == publicada) for c in orden]
+
+
+def seccion_de_resumen(titulo, corrida):
+    """El `resumen.md` de una corrida como sección del documento, o nada si no lo tiene."""
+    resumen = os.path.join(corrida, "resumen.md")
+    if not os.path.exists(resumen):
+        return []
+    with open(resumen, encoding="utf-8") as f:
+        cuerpo = f.read().split("\n", 1)[-1]  # sin el título propio
+    return ["", f"## {titulo}", "", f"Fuente: `{os.path.relpath(corrida, RAIZ).replace(os.sep, '/')}`.", "",
+            cuerpo.strip()]
+
+
 def main():
     if len(sys.argv) < 2:
         print(__doc__)
@@ -54,7 +82,8 @@ def main():
     semillas = res.get("semillas", [0])
 
     md = ["# Resultados para el informe", "",
-          f"Generado por `scripts/reporte_tesis.py` desde `{os.path.relpath(corrida, RAIZ)}`. No editar a mano.", "",
+          f"Generado por `scripts/reporte_tesis.py` "
+          f"desde `{os.path.relpath(corrida, RAIZ).replace(os.sep, '/')}`. No editar a mano.", "",
           f"Datos: {res['datos']}. Semillas: {semillas}.", "",
           "## 1. Escenarios de evaluación", "",
           "| Escenario | Qué mide | Accuracy (%) | F1 macro (%) |", "|---|---|---|---|"]
@@ -107,21 +136,18 @@ def main():
             cuerpo = f.read().split("\n", 4)[-1]  # sin el título ni el aviso de generación
         md += ["", "## 5. Sesión de captura por dispositivo", "", cuerpo.strip()]
 
-    # Las corridas más recientes del federado y de la calibración, si existen.
-    for titulo, patron in (("6. Aprendizaje federado con personas reales",
-                            os.path.join(RAIZ, "federated", "resultados_personas_*")),
-                           ("7. Calibración y umbral de la app",
-                            os.path.join(RAIZ, "resultados_calibracion", "20*")),
-                           ("8. Robustez por condición (sesión 2)",
-                            os.path.join(RAIZ, "resultados_robustez", "20*")),
-                           ("9. Consistencia estadística σ",
-                            os.path.join(RAIZ, "resultados_consistencia", "20*"))):
+    def mas_reciente(titulo, patron):
         corridas = sorted(glob.glob(patron))
-        resumen = os.path.join(corridas[-1], "resumen.md") if corridas else None
-        if resumen and os.path.exists(resumen):
-            with open(resumen, encoding="utf-8") as f:
-                cuerpo = f.read().split("\n", 1)[-1]  # sin el título propio
-            md += ["", f"## {titulo}", "", f"Fuente: `{os.path.relpath(corridas[-1], RAIZ)}`.", "", cuerpo.strip()]
+        return seccion_de_resumen(titulo, corridas[-1]) if corridas else []
+
+    md += mas_reciente("6. Aprendizaje federado con personas reales",
+                       os.path.join(RAIZ, "federated", "resultados_personas_*"))
+    for corrida, publicada in corridas_de_calibracion(os.path.join(RAIZ, "resultados_calibracion")):
+        nombre = os.path.basename(corrida)
+        md += seccion_de_resumen("7. Calibración y umbral de la app (corrida publicada)" if publicada
+                                 else f"7. Calibración: corrida posterior {nombre} (no publicada en la app)", corrida)
+    md += mas_reciente("8. Robustez por condición (sesión 2)", os.path.join(RAIZ, "resultados_robustez", "20*"))
+    md += mas_reciente("9. Consistencia estadística σ", os.path.join(RAIZ, "resultados_consistencia", "20*"))
 
     md += ["", "## Tabla de escenarios en LaTeX (booktabs)", "", "```latex", *tex, "```", ""]
     os.makedirs(SALIDA, exist_ok=True)

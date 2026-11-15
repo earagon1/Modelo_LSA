@@ -22,10 +22,14 @@ B. Personalización de un usuario nuevo: el modelo federado sin p se ajusta con 
 C. Personalización de un miembro: FedAvg con la tanda 1 de las tres personas; cada
    una evalúa en su tanda 2 el modelo global y el global ajustado con su tanda 1.
 
-B y C se comparan con un t-test pareado (personas × semillas).
+B y C se comparan con un t-test pareado sobre la media de cada persona. Las semillas
+no cuentan como observaciones: repiten a las mismas personas, y tratarlas como
+independientes (n = personas × semillas) achica el valor p sin que haya más evidencia.
 
 Uso, desde la raíz de modelo_LSA (con la GPU en el PATH, ver CLAUDE.md):
     python federated/run_personas.py --semillas 0 1 2
+    python federated/run_personas.py --rehacer federated/resultados_personas_<corrida>
+El segundo rehace el resumen de una corrida ya hecha, sin entrenar.
 """
 from __future__ import annotations
 
@@ -85,7 +89,12 @@ def main():
     ap.add_argument("--beta", type=float, default=ag.BETA_POR_DEFECTO)
     ap.add_argument("--krum-f", type=int, default=ag.F_POR_DEFECTO)
     ap.add_argument("--krum-m", type=int, default=ag.M_POR_DEFECTO)
+    ap.add_argument("--rehacer", metavar="CARPETA",
+                    help="rehace resumen.md y el resumen del JSON de una corrida ya hecha, sin entrenar")
     args = ap.parse_args()
+    if args.rehacer:
+        rehacer(args.rehacer, ap)
+        return
     parametros = {"beta": args.beta, "f": args.krum_f, "m": args.krum_m}
     if args.agregacion == "krum":
         # En A federan las otras dos personas, así que hay 2·S clientes (en C, 3·S).
@@ -212,11 +221,34 @@ def resumir(a, b, c, ttest_rel):
         pz = [f["personalizado"] for f in filas]
         r = {"global": media_desvio(g), "personalizado": media_desvio(pz), "mejora_media": float(np.mean(
             np.array(pz) - np.array(g)))}
-        if len(filas) > 1:
-            t = ttest_rel(pz, g)
-            r["t"], r["p"] = float(t.statistic), float(t.pvalue)
+        # La prueba va sobre la media de cada persona: las semillas no son observaciones independientes.
+        personas = sorted({f["persona"] for f in filas})
+        gp = [float(np.mean([f["global"] for f in filas if f["persona"] == p])) for p in personas]
+        zp = [float(np.mean([f["personalizado"] for f in filas if f["persona"] == p])) for p in personas]
+        r["mejora_por_persona"] = {p: z - g0 for p, z, g0 in zip(personas, zp, gp, strict=True)}
+        if len(personas) > 1:
+            t = ttest_rel(zp, gp)
+            r["t"], r["p"], r["n_prueba"] = float(t.statistic), float(t.pvalue), len(personas)
         out[nombre] = r
     return out
+
+
+def rehacer(carpeta, ap):
+    """Vuelve a calcular el resumen de una corrida guardada, con las filas que ya tiene."""
+    from scipy.stats import ttest_rel
+
+    ruta = os.path.join(carpeta, "resultados.json")
+    with open(ruta, encoding="utf-8") as f:
+        res = json.load(f)
+    # Las corridas viejas no guardaron las opciones que se agregaron después: valen los valores por defecto.
+    args = ap.parse_args([])
+    for k, v in res["config"].items():
+        setattr(args, k, v)
+    res["resumen"] = resumir(res["lopo"], res["usuario_nuevo"], res["miembros"], ttest_rel)
+    with open(ruta, "w", encoding="utf-8") as f:
+        json.dump(res, f, indent=2, ensure_ascii=False)
+    escribir_md(carpeta, res["resumen"], args)
+    print(f"-> {carpeta}")
 
 
 def escribir_md(salida, r, args):
@@ -242,7 +274,9 @@ def escribir_md(salida, r, args):
         x = r[clave]
         md += [f"## {nombre}", "", f"Modelo global {pct(x['global']['media'])} % → personalizado con su tanda 1 "
                f"{pct(x['personalizado']['media'])} % (mejora media {pct(x['mejora_media'])} puntos"
-               + (f"; t = {x['t']:.2f}, p = {x['p']:.4f}" if "p" in x else "") + ").", ""]
+               + (f"; t pareada sobre la media de cada persona, n = {x['n_prueba']}: t = {x['t']:.2f}, "
+                  f"p = {x['p']:.4f}" if "p" in x else "") + "). Por persona: "
+               + ", ".join(f"{p} {pct(v)}" for p, v in x["mejora_por_persona"].items()) + ".", ""]
     with open(os.path.join(salida, "resumen.md"), "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(md))
 
