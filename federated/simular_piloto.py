@@ -16,6 +16,10 @@ entrenan) y su sesión 2 (bloque B). También evalúa las cabezas reales de cada
 tener las dos cosas lado a lado, y repite la simulación con varias semillas (el
 entrenamiento local y la cuantización son aleatorios) y con más épocas locales.
 
+Repite además la personalización de P2: la cabeza ajustada solo con sus tomas, con las
+mismas épocas que la app (`ClienteFederado.EPOCAS_PERSONALIZAR`), desde la cabeza del
+paquete y desde la que dejaron las rondas, que es la que personalizó el teléfono de P2.
+
 Uso, desde la raíz de modelo_LSA:
     python federated/simular_piloto.py
 """
@@ -41,6 +45,7 @@ PILOTO = os.path.join(AQUI, "piloto_sinP2")
 # Lo que registró el piloto (rondas.jsonl): quién entrenó y con cuántas tomas.
 CLIENTES = {"P2": ("p1_8b78a18690edf9c7", "OnePlus CPH2663"), "P1": ("p1_b80dde3cced831aa", "LENOVO TB321FU")}
 EVALUADA = "P2"
+EPOCAS_PERSONALIZAR = 8  # ClienteFederado.kt
 
 
 def rondas_reales(directorio):
@@ -89,6 +94,7 @@ def main():
     import tensorflow as tf
     tf.config.set_visible_devices([], "GPU")
     from cliente_emulado import entrenar_cabeza
+
     from lsa import dataset as ds
     from lsa.export import inferir_tflite
 
@@ -121,17 +127,20 @@ def main():
 
     habituales = (a.fuente == "telefono") & (a.persona == EVALUADA) & np.isin(a.uuid, list(test_fijo))
     sesion2 = b.persona == EVALUADA
-    evaluar = {"habituales": (emb_a[habituales], a.y[habituales]), "sesion2": (emb_b[sesion2], b.y[sesion2])}
-    n_eval = {k: int(len(y)) for k, (_, y) in evaluar.items()}
+    sesion2_p3 = b.persona == "P3"  # P3 no participó del piloto: mide si lo de P2 le sirve a otra persona
+    evaluar = {"habituales": (emb_a[habituales], a.y[habituales]), "sesion2": (emb_b[sesion2], b.y[sesion2]),
+               "sesion2_P3": (emb_b[sesion2_p3], b.y[sesion2_p3])}
+    n_eval = {k: len(y) for k, (_, y) in evaluar.items()}
 
     # Las cabezas que publicó el piloto real, v1 (paquete) a v5 (tras la cuarta ronda).
-    real = []
+    real, cabezas = [], {}
     for ruta in sorted(glob.glob(os.path.join(args.dir, "cabezas", "v*.json")),
                        key=lambda r: int(re.search(r"v(\d+)", os.path.basename(r)).group(1))):
         with open(ruta, encoding="utf-8") as f:
             pesos, _ = pr.cabeza_desde_json({"clases": clases, "capas": json.load(f)["capas"]})
         v = int(re.search(r"v(\d+)", os.path.basename(ruta)).group(1))
         if v >= 1:
+            cabezas[v] = pesos
             real.append({"version": v, **{k: acierto(pesos, e, y) for k, (e, y) in evaluar.items()}})
 
     simulado = {}
@@ -142,12 +151,26 @@ def main():
         print(f"{ep} épocas: " + " | ".join(
             f"{k} {100 * np.mean(v):.1f} ± {100 * np.std(v, ddof=1):.1f} (de {100 * min(v):.1f} a {100 * max(v):.1f})"
             for k, v in finales.items()))
+    # Personalización: solo las tomas de P2, sin promediar con nadie, como «Personalizar» en la app.
+    tomas_p2 = clientes[list(CLIENTES).index(EVALUADA)]
+    n_clases = pesos0[-1].shape[0]
+    personalizacion = {}
+    for nombre, inicio in (("v1", cabezas[1]), (f"v{max(cabezas)}", cabezas[max(cabezas)])):
+        filas = []
+        for s in args.semillas:
+            pesos = entrenar_cabeza(inicio, *tomas_p2, n_clases, EPOCAS_PERSONALIZAR, semilla=s)
+            filas.append({k: acierto(pesos, e, y) for k, (e, y) in evaluar.items()})
+        personalizacion[nombre] = filas
+        print(f"personalizado desde {nombre}: " + " | ".join(
+            f"{k} {100 * np.mean([f[k] for f in filas]):.1f} ± {100 * np.std([f[k] for f in filas], ddof=1):.1f}"
+            for k in evaluar))
     print("real: " + " | ".join(f"v{r['version']} {100 * r['habituales']:.1f}/{100 * r['sesion2']:.1f}" for r in real))
 
     os.makedirs(args.salida, exist_ok=True)
     resultado = {"piloto": os.path.relpath(args.dir, RAIZ).replace(os.sep, "/"), "rondas": rondas,
                  "tomas_por_cliente": n_simulado, "tomas_evaluadas": n_eval, "semillas": args.semillas,
-                 "real": real, "simulado": {str(ep): c for ep, c in simulado.items()}}
+                 "real": real, "simulado": {str(ep): c for ep, c in simulado.items()},
+                 "personalizacion": {"epocas": EPOCAS_PERSONALIZAR, "desde": personalizacion}}
     with open(os.path.join(args.salida, "resultados.json"), "w", encoding="utf-8") as f:
         json.dump(resultado, f, indent=1, ensure_ascii=False)
     escribir_resumen(args.salida, resultado)
@@ -174,6 +197,18 @@ def escribir_resumen(salida, r):
             v = [c[-1][k] for c in curvas]
             celdas.append(f"{pct(np.mean(v))} ± {pct(np.std(v, ddof=1))} (de {pct(min(v))} a {pct(max(v))})")
         md.append(f"| {ep} | {celdas[0]} | {celdas[1]} |")
+    pz = r["personalizacion"]
+    md += ["", "## Personalización de P2 (solo sus tomas)", "",
+           f"{pz['epocas']} épocas, como la app, con las mismas semillas. «Desde v1»: la cabeza del paquete, "
+           "sin las rondas. Desde la última versión: la cabeza que dejaron las rondas, la que personalizó el "
+           "teléfono de P2. La sesión 2 de P3, que no participó, muestra si el ajuste le sirve a otra persona.", "",
+           "| Desde | P2 habituales (%) | P2 sesión 2 (%) | P3 sesión 2 (%) |", "|---|---|---|---|"]
+    for desde, filas in pz["desde"].items():
+        celdas = []
+        for k in ("habituales", "sesion2", "sesion2_P3"):
+            v = [f[k] for f in filas]
+            celdas.append(f"{pct(np.mean(v))} ± {pct(np.std(v, ddof=1))} (de {pct(min(v))} a {pct(max(v))})")
+        md.append(f"| {desde} | " + " | ".join(celdas) + " |")
     with open(os.path.join(salida, "resumen.md"), "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(md) + "\n")
 
